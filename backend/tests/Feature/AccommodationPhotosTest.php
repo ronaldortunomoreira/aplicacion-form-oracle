@@ -9,6 +9,7 @@ use App\Models\RoomUnit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -126,6 +127,20 @@ class AccommodationPhotosTest extends TestCase
         Artisan::call('imagenes:sincronizar');
     }
 
+    /**
+     * Apunta la subcarpeta propia de un alojamiento para borrarla al terminar el
+     * test. La usa el comando al descargar, así que el test no sabe de antemano
+     * que existe.
+     */
+    private function recordarSubcarpetaDe(Accommodation $alojamiento): void
+    {
+        $carpeta = $alojamiento->carpetaFotos();
+
+        if ($carpeta) {
+            $this->subcarpetas[] = public_path($carpeta);
+        }
+    }
+
     public function test_la_subcarpeta_del_alojamiento_manda_sobre_la_del_tipo(): void
     {
         $alojamiento = $this->crearAlojamiento('glamping');
@@ -156,6 +171,24 @@ class AccommodationPhotosTest extends TestCase
 
         $imagenes = $this->getJson('/api/accommodations/slug/' . $alojamiento->slug)->json('data.images');
 
+        // La foto es del tipo, así que la ruta es la de la carpeta compartida,
+        // no la subcarpeta del alojamiento.
+        $this->assertSame(self::HOST . '/images/alojamientos/hostales/01-portada.jpg', $imagenes[0]);
+        $this->assertStringNotContainsString($alojamiento->slug, $imagenes[0]);
+    }
+
+    public function test_una_subcarpeta_vacia_cae_a_las_fotos_del_tipo(): void
+    {
+        $alojamiento = $this->crearAlojamiento('hostal');
+
+        $this->fotoEnCarpetaTipo('hostales', '01-portada.jpg');
+        // La subcarpeta existe pero sin fotos: no debe dejar la galería vacía.
+        $this->fotoEnSubcarpeta('hostales', $alojamiento->slug, 'notas.txt');
+
+        $this->sincronizar();
+
+        $imagenes = $this->getJson('/api/accommodations/slug/' . $alojamiento->slug)->json('data.images');
+
         $this->assertSame(self::HOST . '/images/alojamientos/hostales/01-portada.jpg', $imagenes[0]);
     }
 
@@ -171,20 +204,68 @@ class AccommodationPhotosTest extends TestCase
 
         $imagenes = $this->getJson('/api/accommodations/slug/' . $alojamiento->slug)->json('data.images');
 
-        $this->assertContains(self::HOST . '/images/alojamientos/hostales/foto.webp', $imagenes);
-        $this->assertNotContains(self::HOST . '/images/alojamientos/hostales/notas.txt', $imagenes);
-        $this->assertNotContains(self::HOST . '/images/alojamientos/hostales/LEEME.md', $imagenes);
+        $this->assertSame([self::HOST . '/images/alojamientos/hostales/foto.webp'], $imagenes);
     }
 
-    public function test_sin_fotos_en_carpetas_se_usan_las_de_la_base_de_datos(): void
+    public function test_sin_fotos_en_carpetas_se_descarga_la_columna_json(): void
     {
+        // Las URLs de la columna JSON ya no se sirven como texto: el comando las
+        // baja a la carpeta del alojamiento y la galería sale de ahí.
+        Http::fake([
+            'cdn.example.test/*' => Http::response('contenido-jpeg', 200, ['Content-Type' => 'image/jpeg']),
+        ]);
+
         $db = ['https://cdn.example.test/uno.jpg', 'https://cdn.example.test/dos.jpg'];
         $alojamiento = $this->crearAlojamiento('cabana', ['images' => $db]);
+
+        $this->recordarSubcarpetaDe($alojamiento);
 
         $this->sincronizar();
 
         $imagenes = $this->getJson('/api/accommodations/slug/' . $alojamiento->slug)->json('data.images');
 
+        $base = self::HOST . '/images/alojamientos/cabanas/' . $alojamiento->slug . '/';
+
+        $this->assertCount(2, $imagenes);
+        $this->assertStringStartsWith($base . 'd-', $imagenes[0]);
+        $this->assertStringEndsWith('.jpg', $imagenes[0]);
+    }
+
+    public function test_re_sincronizar_no_vuelve_a_descargar_lo_que_ya_esta_en_disco(): void
+    {
+        Http::fake([
+            'cdn.example.test/*' => Http::response('contenido-jpeg', 200, ['Content-Type' => 'image/jpeg']),
+        ]);
+
+        $alojamiento = $this->crearAlojamiento('hostal', ['images' => ['https://cdn.example.test/uno.jpg']]);
+
+        $this->recordarSubcarpetaDe($alojamiento);
+
+        $this->sincronizar();
+        $this->sincronizar();
+
+        // El archivo se llama igual las dos veces, así que solo se baja una vez.
+        Http::assertSentCount(1);
+    }
+
+    public function test_una_url_que_no_se_puede_descargar_no_rompe_la_galeria(): void
+    {
+        Http::fake([
+            'cdn.example.test/*' => Http::response('no existe', 404),
+        ]);
+
+        $db = ['https://cdn.example.test/rota.jpg'];
+        $alojamiento = $this->crearAlojamiento('cabana', ['images' => $db]);
+
+        $this->recordarSubcarpetaDe($alojamiento);
+
+        $this->sincronizar();
+
+        $imagenes = $this->getJson('/api/accommodations/slug/' . $alojamiento->slug)->json('data.images');
+
+        // No hay archivo, así que la galería cae a la columna JSON y la foto se
+        // sigue viendo: una descarga fallida no puede dejar el alojamiento sin
+        // imágenes.
         $this->assertSame($db, $imagenes);
     }
 
@@ -208,28 +289,6 @@ class AccommodationPhotosTest extends TestCase
             [$base . '01-portada.jpg'],
             $this->getJson('/api/accommodations/slug/' . $alojamiento->slug)->json('data.images')
         );
-    }
-
-    public function test_las_fotos_subidas_desde_el_panel_no_se_borran_al_sincronizar(): void
-    {
-        $alojamiento = $this->crearAlojamiento('hostal');
-
-        $this->fotoEnCarpetaTipo('hostales', '01-carpeta.jpg');
-
-        // Una foto subida desde el panel no viene ni del disco ni de la columna
-        // JSON, así que el comando no debe tocarla.
-        $alojamiento->fotos()->create([
-            'ruta' => 'https://cdn.example.test/subida.jpg',
-            'orden' => 5,
-            'origen' => 'panel',
-        ]);
-
-        $this->sincronizar();
-
-        $imagenes = $this->getJson('/api/accommodations/slug/' . $alojamiento->slug)->json('data.images');
-
-        $this->assertContains('https://cdn.example.test/subida.jpg', $imagenes);
-        $this->assertContains(self::HOST . '/images/alojamientos/hostales/01-carpeta.jpg', $imagenes);
     }
 
     public function test_las_reservas_tambien_traen_las_fotos_del_alojamiento(): void

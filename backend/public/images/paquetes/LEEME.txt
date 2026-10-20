@@ -4,18 +4,19 @@ FOTOS DE LOS PAQUETES TURISTICOS
 DONDE SE GUARDAN LAS FOTOS
 --------------------------
 La verdad sobre las galerias es la tabla `imagenes` de la base de datos: una
-fila por foto, con el dueño (alojamiento, tipo de alojamiento o paquete), la
-ruta, el orden y el origen (carpeta, base de datos o panel).
+fila por foto, con el dueño (alojamiento, tipo de alojamiento o paquete), el
+nombre del archivo y el orden.
 
-Las carpetas de este directorio y las columnas `imagen` e `imagenes` del paquete
-quedan como FUENTES: se vuelcan a la tabla `imagenes` con el comando
+Las carpetas de este directorio son la unica FUENTE: la tabla solo guarda el
+nombre del archivo, y la ruta se arma al leerla con la carpeta del paquete. El
+comando
 
     php artisan imagenes:sincronizar
 
-Ese comando se ejecuta cada vez que se anaden o quitan fotos, y tambien al
-desplegar. Borra y vuelve a insertar solo las filas de origen carpeta y base de
-datos; las de origen "panel" (fotos subidas desde el panel de administracion) no
-se tocan.
+recorre las carpetas, baja a ellas las URLs que estuvieran guardadas en las
+columnas `imagen` e `imagenes` del paquete y deja la tabla al dia. Se ejecuta
+cada vez que se anaden o quitan fotos, y tambien al desplegar, despues de
+migrar.
 
 CARPETA
 -------
@@ -38,14 +39,18 @@ Como anadir fotos
 
 QUE FOTOS SE VEN
 ----------------
-- Las fotos de la carpeta del paquete, primero.
-- Y despues, sin repetir, la portada (`imagen`) y las URLs de la columna
-  `imagenes`, guardadas en la base de datos.
-- Si no hay ninguna fila, se cae a esas columnas para no dejar la galeria vacia.
+- Las fotos de la carpeta del paquete, por orden de nombre.
+- Si no hay ninguna, se cae a la portada (`imagen`) y a las URLs de la columna
+  `imagenes`, para las que el comando no haya podido descargar.
+
+Los archivos que empiezan por "d-" los ha descargado el comando a partir de una
+URL de la base de datos. No los renombres a mano: el nombre sale del hash de su
+URL, y es lo que permite re-sincronizar sin volver a bajarlos ni moverlos.
 
 Notas
 -----
-- La primera foto se usa como portada en las tarjetas y en el listado.
+- La primera foto (la de menor orden) se usa como portada en las tarjetas y en
+  el listado.
 - Para controlar el orden, numera los archivos: 01-portada.jpg, 02-salon.jpg...
 - Si borras un archivo de la carpeta, vuelve a ejecutar el comando para que
   desaparezca de la galeria.

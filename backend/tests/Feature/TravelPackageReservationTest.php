@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Mail\ReservationConfirmation;
+use App\Models\Empresa;
+use App\Models\Pais;
 use App\Models\Reservation;
 use App\Models\TravelPackage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,16 +22,33 @@ class TravelPackageReservationTest extends TestCase
         $this->seed();
     }
 
-    /** El seeder de paquetes no corre con DatabaseSeeder, así que se crea aquí. */
+    /**
+     * El seeder de paquetes no corre con DatabaseSeeder, así que se crea aquí.
+     *
+     * `empresa_id` es obligatorio: no existe un paquete sin empresa, así que
+     * toda prueba que quiera un paquete tiene que empezar por su empresa.
+     */
     private function crearPaquete(array $extra = []): TravelPackage
     {
         return TravelPackage::create($extra + [
+            'empresa_id' => $this->crearEmpresa()->id,
             'nombre' => 'Tour Ciudad de Oro 1 Dia',
             'slug' => 'tour-ciudad-de-oro-1-dia',
             'duracion' => '1 dia',
             'precio_desde' => 500,
             'moneda_iso' => 'BOB',
             'activo' => true,
+        ]);
+    }
+
+    /** Empresa de prueba, con el país del que heredará el paquete. */
+    private function crearEmpresa(): Empresa
+    {
+        return Empresa::create([
+            'name' => 'Operadora de Prueba',
+            'email' => 'operadora-' . uniqid() . '@example.com',
+            'country_code' => 'BO',
+            'pais_id' => Pais::where('iso2', 'BO')->first()?->id,
         ]);
     }
 

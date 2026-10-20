@@ -4,18 +4,18 @@ FOTOS DE LOS ALOJAMIENTOS
 DONDE SE GUARDAN LAS FOTOS
 --------------------------
 La verdad sobre las galerias es la tabla `imagenes` de la base de datos: una
-fila por foto, con el dueño (alojamiento, tipo de alojamiento o paquete), la
-ruta, el orden y el origen (carpeta, base de datos o panel).
+fila por foto, con el dueño (alojamiento, tipo de alojamiento o paquete), el
+nombre del archivo y el orden.
 
-Las carpetas de este directorio y la columna `imagenes` del alojamiento quedan
-como FUENTES: se vuelcan a la tabla `imagenes` con el comando
+Las carpetas de este directorio son la unica FUENTE: la tabla solo guarda el
+nombre del archivo, y la ruta se arma al leerla con la carpeta que le toca al
+dueño. El comando
 
     php artisan imagenes:sincronizar
 
-Ese comando se ejecuta cada vez que se anaden o quitan fotos, y tambien al
-desplegar. Borra y vuelve a insertar solo las filas de origen carpeta y base de
-datos; las de origen "panel" (fotos subidas desde el panel de administracion) no
-se tocan.
+recorre las carpetas, baja a ellas las URLs que estuvieran guardadas en las
+columnas JSON de los alojamientos y deja la tabla al dia. Se ejecuta cada vez
+que se anaden o quitan fotos, y tambien al desplegar, despues de migrar.
 
 CARPETAS
 --------
@@ -47,13 +47,19 @@ QUE FOTOS SE VEN
 ----------------
 - Si el alojamiento tiene fotos propias (subcarpeta por slug), se ven esas.
 - Si no, se ven las de la carpeta del tipo, comunes a todos los del tipo.
-- Y despues, sin repetir, las URLs guardadas en la columna `imagenes` del
-  alojamiento.
-- Si no hay ninguna fila, se cae a esa columna para no dejar la galeria vacia.
+- Si aun asi no hay ninguna, se cae a las URLs de la columna `imagenes` del
+  alojamiento, para las que el comando no haya podido descargar.
+
+Los archivos que empiezan por "d-" los ha descargado el comando a partir de una
+URL de la base de datos. No los renombres a mano: el nombre sale del hash de su
+URL, y es lo que permite re-sincronizar sin volver a bajarlos ni moverlos. Si
+quieres que un alojamiento herede las fotos de su tipo en vez de tenerlas
+propias, deja su subcarpeta sin imagenes.
 
 Notas
 -----
-- La primera foto se usa como portada en las tarjetas y en el listado.
+- La primera foto (la de menor orden) se usa como portada en las tarjetas y en
+  el listado.
 - Para controlar el orden, numera los archivos: 01-portada.jpg, 02-salon.jpg...
 - Si borras un archivo de una carpeta, vuelve a ejecutar el comando para que
   desaparezca de la galeria.

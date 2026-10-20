@@ -20,7 +20,7 @@ export default function TravelPackageCard({ pkg }) {
       <div className="p-5 flex-1 flex flex-col">
         <div className="flex items-center gap-1 text-xs font-semibold text-slate-500 mb-1.5">
           <MdPlace className="w-3.5 h-3.5 text-teal-600 shrink-0" />
-          <span>{pkg.city || pkg.destination}{pkg.country ? `, ${pkg.country}` : ''}</span>
+          <span>{pkg.city}{pkg.country ? `, ${pkg.country}` : ''}</span>
         </div>
         <h3 className="font-bold text-slate-900 text-lg leading-snug line-clamp-1 group-hover:text-teal-600 transition-colors">
           <Link to={r(`/paquetes/${pkg.slug}`)} className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-teal-600 focus-visible:outline-offset-2">

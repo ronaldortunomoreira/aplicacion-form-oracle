@@ -8,51 +8,60 @@ use App\Models\Imagen;
 use App\Models\TravelPackage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
+use Throwable;
 
 /**
- * Vuelca a la tabla `imagenes` (la única verdad sobre las galerías) todo lo
- * que hasta ahora vivía repartido en carpetas públicas y en columnas JSON:
+ * Pone la tabla `imagenes` al día con lo que hay en disco.
  *
- *   - public/images/alojamientos/<carpeta>/<slug>/  (una carpeta por alojamiento)
- *   - public/images/alojamientos/<carpeta>/         (fotos del tipo, compartidas)
- *   - public/images/paquetes/<slug>/                (una carpeta por paquete)
- *   - alojamientos.imagenes, travel_packages.imagen e travel_packages.imagenes
+ * Hace dos cosas, en este orden:
  *
- * Borra y vuelve a insertar las filas cuyo `origen` es 'carpeta' o 'bd' para cada
- * recurso. Las filas de `origen` 'panel' (futuras subidas desde el panel) no se
- * tocan.
+ *   1. Baja a la carpeta de cada recurso las URLs que estaban guardadas como
+ *      texto en las columnas JSON (`alojamientos.imagenes`,
+ *      `travel_packages.imagen` y `travel_packages.imagenes`). Esas columnas
+ *      dejan de ser una fuente de galería y pasan a ser solo de dónde salen los
+ *      archivos.
+ *   2. Vuelca a la tabla los nombres de los archivos que hay en cada carpeta:
+ *
+ *        - images/alojamientos/<carpeta>/<slug>/   fotos propias del alojamiento
+ *        - images/alojamientos/<carpeta>/          fotos del tipo, compartidas
+ *        - images/paquetes/<slug>/                 fotos del paquete
+ *
+ * La descarga es idempotente: el nombre del archivo sale de la URL, así que
+ * re-sincronizar no vuelve a bajar lo que ya está en disco ni mueve nada. Lo
+ * que se descarga y después se quita de la columna, se borra de la carpeta.
+ *
+ * Al crear la subcarpeta propia de un alojamiento que no tenía ninguna, ese
+ * alojamiento pasa a tener fotos propias y deja de heredar las de su tipo.
  */
 class SincronizarImagenes extends Command
 {
     protected $signature = 'imagenes:sincronizar';
 
-    protected $description = 'Vuelca las fotos de las carpetas públicas y de las columnas JSON a la tabla `imagenes`';
+    protected $description = 'Descarga las fotos de las columnas JSON a las carpetas públicas y vuelca los archivos a la tabla `imagenes`';
 
     /** Extensiones que se consideran imagen al leer una carpeta. */
     private const EXTENSIONES = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'];
 
+    /** Tamaño máximo de una foto descargada. */
+    private const MAXIMO_BYTES = 5242880;
+
     /**
-     * Carpeta pública de fotos de cada tipo de alojamiento. El slug es el mismo
-     * que viaja en la URL (/alojamientos?type_slug=hotel) y el nombre de carpeta
-     * es la forma legible que ve el administrador al arrastrar las imágenes:
-     * public/images/alojamientos/<carpeta>/.
+     * Marca de los archivos que ha descargado este comando. Sirve para distinguir
+     * lo que puso el administrador a mano, que no se debe borrar nunca.
      */
-    private const CARPETAS_TIPO = [
-        'hotel' => 'hoteles',
-        'hostal' => 'hostales',
-        'cabana' => 'cabanas',
-        'apartamento' => 'apartamentos',
-        'glamping' => 'glamping',
-    ];
+    private const PREFIJO_DESCARGA = 'd-';
 
     public function handle(): int
     {
+        $this->descargarColumnasJson();
+
         $total = 0;
         $total += $this->sincronizarTiposDeAlojamiento();
         $total += $this->sincronizarAlojamientos();
         $total += $this->sincronizarPaquetes();
 
-        $this->info("{$total} fotos sincronizadas en la tabla `imagenes`.");
+        $this->info("{$total} fotos en la tabla `imagenes`.");
 
         return self::SUCCESS;
     }
@@ -66,67 +75,51 @@ class SincronizarImagenes extends Command
         $total = 0;
 
         foreach (AccommodationType::all() as $tipo) {
-            $carpeta = self::CARPETAS_TIPO[$tipo->slug] ?? null;
+            $carpeta = $tipo->carpetaFotos();
 
-            if (! $carpeta) {
-                $this->warn("Sin carpeta publica para el tipo '{$tipo->slug}' (id {$tipo->id}); sus fotos de la BD se importan igual.");
-
-                $carpeta = $tipo->slug;
+            if (! File::isDirectory(public_path($carpeta))) {
+                $this->warn("Sin carpeta publica '{$carpeta}' para el tipo '{$tipo->slug}' (id {$tipo->id}).");
             }
 
-            $rutas = $this->desdeCarpeta('images/alojamientos/' . $carpeta);
-            $total += $this->guardarFotos('tipo_alojamiento', $tipo->id, $rutas);
+            $total += $this->volcar('tipo_alojamiento', $tipo->id, $this->archivosEn(public_path($carpeta)));
         }
 
         return $total;
     }
 
     /**
-     * Fotos de cada alojamiento: su carpeta propia, y si no tiene, la carpeta de
-     * su tipo. Al final se añaden las URLs de la columna `imagenes`, sin repetir.
+     * Fotos propias de cada alojamiento, las de su subcarpeta.
+     *
+     * Un alojamiento sin subcarpeta propia no recibe ninguna fila: el modelo cae
+     * a las filas de su tipo, que son las mismas para todos los alojamientos de
+     * ese tipo. Copiarlas aquí sería duplicar la galería y, además, dejaría al
+     * modelo sin forma de saber que esas fotos viven en la carpeta del tipo y no
+     * en la subcarpeta del alojamiento.
      */
     private function sincronizarAlojamientos(): int
     {
         $total = 0;
 
         foreach (Accommodation::query()->with('accommodationType')->get() as $alojamiento) {
-            $carpeta = self::CARPETAS_TIPO[$alojamiento->accommodationType?->slug]
-                ?? $alojamiento->accommodationType?->slug;
+            $carpeta = $alojamiento->carpetaFotos();
 
-            $rutas = [];
-
-            if ($carpeta) {
-                // La carpeta propia del alojamiento manda; si no tiene fotos, se
-                // cae a la del tipo (compartida por todos los de ese tipo).
-                $relativa = 'images/alojamientos/' . $carpeta . '/' . $alojamiento->slug;
-                $rutas = $this->desdeCarpeta($relativa);
-
-                if (empty($rutas)) {
-                    $rutas = $this->desdeCarpeta('images/alojamientos/' . $carpeta);
-                }
-            }
-
-            $rutas = $this->unir($rutas, $alojamiento->imagenes);
-
-            $total += $this->guardarFotos('alojamiento', $alojamiento->id, $rutas);
+            $total += $this->volcar(
+                'alojamiento',
+                $alojamiento->id,
+                $carpeta ? $this->archivosEn(public_path($carpeta)) : []
+            );
         }
 
         return $total;
     }
 
-    /**
-     * Fotos de cada paquete: la carpeta de su paquete y después la portada
-     * (`imagen`) y las URLs de la columna `imagenes`, sin repetir.
-     */
+    /** Fotos de cada paquete, de su carpeta. */
     private function sincronizarPaquetes(): int
     {
         $total = 0;
 
         foreach (TravelPackage::all() as $paquete) {
-            $rutas = $this->desdeCarpeta('images/paquetes/' . $paquete->slug);
-            $rutas = $this->unir($rutas, array_merge([$paquete->imagen], $paquete->imagenes ?? []));
-
-            $total += $this->guardarFotos('paquete', $paquete->id, $rutas);
+            $total += $this->volcar('paquete', $paquete->id, $this->archivosEn(public_path($paquete->carpetaFotos())));
         }
 
         return $total;
@@ -134,71 +127,203 @@ class SincronizarImagenes extends Command
 
     /**
      * Nombres de los archivos de imagen de una carpeta, ordenados de forma
-     * natural (01, 02, ... 10) para que la portada sea predecible. Devuelve una
+     * natural (01, 02, ... 10) para que el orden sea predecible. Devuelve una
      * lista vacía si la carpeta no existe.
      *
      * @return array<int, string>
      */
-    private function desdeCarpeta(string $rutaRelativa): array
+    private function archivosEn(string $absoluta): array
     {
-        $absoluta = public_path($rutaRelativa);
-
-        if (! File::isDirectory($absoluta)) {
+        if ($absoluta === '' || ! File::isDirectory($absoluta)) {
             return [];
         }
 
         return collect(File::files($absoluta))
             ->filter(fn ($archivo) => in_array(strtolower($archivo->getExtension()), self::EXTENSIONES, true))
             ->sortBy(fn ($archivo) => $archivo->getFilename(), SORT_NATURAL | SORT_FLAG_CASE)
-            ->map(fn ($archivo) => '/' . $rutaRelativa . '/' . rawurlencode($archivo->getFilename()))
+            ->map(fn ($archivo) => $archivo->getFilename())
             ->values()
             ->all();
     }
 
     /**
-     * Añade al final de una lista de rutas las URLs que vienen de la base de
-     * datos, descartando vacías y repetidas (tanto con carpeta como entre sí).
+     * Reemplaza todas las fotos de un recurso por la lista que se le pase.
      *
-     * @return array<int, string>
+     * @param array<int, string> $archivos
      */
-    private function unir(array $rutas, ?array $urls): array
-    {
-        foreach ($urls ?? [] as $url) {
-            if (is_string($url) && $url !== '' && ! in_array($url, $rutas, true)) {
-                $rutas[] = $url;
-            }
-        }
-
-        return array_values($rutas);
-    }
-
-    /**
-     * Reemplaza las fotos de un recurso. Borra solo las filas de los orígenes que
-     * gestiona este comando (carpeta y base de datos); las de origen 'panel' se
-     * conservan.
-     *
-     * @param array<int, string> $rutas
-     */
-    private function guardarFotos(string $tipo, int $id, array $rutas): int
+    private function volcar(string $tipo, int $id, array $archivos): int
     {
         Imagen::where('recurso_tipo', $tipo)
             ->where('recurso_id', $id)
-            ->whereIn('origen', ['carpeta', 'bd'])
             ->delete();
 
-        foreach ($rutas as $orden => $ruta) {
+        foreach ($archivos as $orden => $archivo) {
             Imagen::create([
                 'recurso_tipo' => $tipo,
                 'recurso_id' => $id,
-                'ruta' => $ruta,
+                'archivo' => $archivo,
                 'orden' => $orden,
-                'es_portada' => $orden === 0,
-                // Las rutas de carpeta salen de archivos del servidor; las de la
-                // base de datos traen el host ya puesto, así que no hacen falta.
-                'origen' => str_starts_with($ruta, '/') ? 'carpeta' : 'bd',
             ]);
         }
 
-        return count($rutas);
+        return count($archivos);
+    }
+
+    /**
+     * Baja a la carpeta de cada recurso las URLs que las columnas JSON tenían
+     * guardadas como texto.
+     */
+    private function descargarColumnasJson(): void
+    {
+        foreach (Accommodation::query()->with('accommodationType')->get() as $alojamiento) {
+            // Sin tipo no hay carpeta posible, así que esas URLs se quedan como
+            // están y la galería las seguirá sirviendo desde la columna.
+            $carpeta = $alojamiento->carpetaFotos();
+
+            if ($carpeta) {
+                $this->descargarEn($carpeta, $alojamiento->imagenes ?? []);
+            }
+        }
+
+        foreach (TravelPackage::all() as $paquete) {
+            $this->descargarEn(
+                $paquete->carpetaFotos(),
+                array_merge(array_filter([$paquete->imagen]), $paquete->imagenes ?? [])
+            );
+        }
+    }
+
+    /**
+     * Descarga a una carpeta las URLs de la lista y borra las que ya no estén.
+     *
+     * @param array<int, mixed> $urls
+     */
+    private function descargarEn(string $carpetaRelativa, array $urls): void
+    {
+        $absoluta = public_path($carpetaRelativa);
+        $esperados = [];
+
+        foreach ($urls as $url) {
+            if (! is_string($url) || $url === '') {
+                continue;
+            }
+
+            $base = $this->nombreBase($url);
+
+            if (! $base) {
+                continue;
+            }
+
+            $esperados[] = $base;
+
+            // El nombre sale de la URL, así que si el archivo ya está en disco no
+            // se vuelve a descargar.
+            if (! empty(File::glob($absoluta . '/' . $base . '.*'))) {
+                continue;
+            }
+
+            $this->descargar($url, $absoluta, $base);
+        }
+
+        $this->borrarDescargasHuerfanas($absoluta, $esperados);
+    }
+
+    /**
+     * Nombre base, sin extensión, de la foto descargada de una URL.
+     *
+     * Sale del hash de la URL y no de su posición, para que el archivo sea
+     * estable: re-sincronizar no lo renombra ni lo vuelve a bajar, y se puede
+     * saber cuál es el suyo mirando solo el disco.
+     */
+    private function nombreBase(string $url): ?string
+    {
+        if (! preg_match('#^https?://#i', $url)) {
+            return null;
+        }
+
+        return self::PREFIJO_DESCARGA . substr(sha1($url), 0, 16);
+    }
+
+    /** Escribe una URL en la carpeta. Devuelve false si no se pudo descargar. */
+    private function descargar(string $url, string $carpetaAbsoluta, string $base): bool
+    {
+        try {
+            $respuesta = Http::timeout(15)
+                ->retry(2, 200)
+                ->withHeaders(['Accept' => 'image/*'])
+                ->get($url);
+        } catch (Throwable $e) {
+            $this->warn("No se pudo descargar {$url}: {$e->getMessage()}");
+
+            return false;
+        }
+
+        if (! $respuesta->successful()) {
+            $this->warn("No se pudo descargar {$url}: HTTP {$respuesta->status()}");
+
+            return false;
+        }
+
+        $cuerpo = $respuesta->body();
+
+        if ($cuerpo === '') {
+            $this->warn("No se pudo descargar {$url}: respuesta vacia.");
+
+            return false;
+        }
+
+        if (strlen($cuerpo) > self::MAXIMO_BYTES) {
+            $this->warn('Descartada ' . $url . ': supera ' . self::MAXIMO_BYTES . ' bytes.');
+
+            return false;
+        }
+
+        File::ensureDirectoryExists($carpetaAbsoluta);
+        File::put($carpetaAbsoluta . '/' . $base . '.' . $this->extensionDe($respuesta->header('Content-Type')), $cuerpo);
+
+        return true;
+    }
+
+    /**
+     * Extensión del archivo descargado, según el Content-Type del servidor. Un
+     * servidor que no lo manda se asume jpeg.
+     */
+    private function extensionDe(?string $contentType): string
+    {
+        $mapa = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'image/gif' => 'gif',
+            'image/avif' => 'avif',
+        ];
+
+        $tipo = strtolower(trim(explode(';', $contentType ?? '')[0]));
+
+        return $mapa[$tipo] ?? 'jpg';
+    }
+
+    /**
+     * Borra de una carpeta las descargas cuya URL ya no está en la columna
+     * JSON. Los archivos con otro nombre, que son los que puso el
+     * administrador, no se tocan.
+     *
+     * @param array<int, string> $esperados
+     */
+    private function borrarDescargasHuerfanas(string $carpetaAbsoluta, array $esperados): void
+    {
+        if (! File::isDirectory($carpetaAbsoluta)) {
+            return;
+        }
+
+        foreach (File::glob($carpetaAbsoluta . '/' . self::PREFIJO_DESCARGA . '*') as $ruta) {
+            $nombre = basename($ruta);
+
+            // El nombre es d-<hash>.<extension>, y el hash no lleva puntos.
+            if (! in_array(explode('.', $nombre)[0], $esperados, true)) {
+                File::delete($ruta);
+                $this->info("Descarga huerfana borrada: {$nombre}");
+            }
+        }
     }
 }

@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\Empresa;
+use App\Models\Pais;
 use App\Models\TravelPackage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
@@ -48,6 +51,7 @@ class TravelPackagePhotosTest extends TestCase
         }
 
         $paquete = TravelPackage::create($extra + [
+            'empresa_id' => $this->crearEmpresa()->id,
             'nombre' => 'Tour Fotos',
             'slug' => $slug,
             'precio_desde' => 100,
@@ -58,6 +62,20 @@ class TravelPackagePhotosTest extends TestCase
         $this->sincronizar();
 
         return $paquete;
+    }
+
+    /**
+     * Empresa de prueba: `empresa_id` es obligatorio en los paquetes, así que
+     * no se puede crear uno sin una empresa detrás.
+     */
+    private function crearEmpresa(): Empresa
+    {
+        return Empresa::create([
+            'name' => 'Operadora Fotos',
+            'email' => 'operadora-fotos-' . uniqid() . '@example.com',
+            'country_code' => 'BO',
+            'pais_id' => Pais::where('iso2', 'BO')->first()?->id,
+        ]);
     }
 
     /** Vuelca las carpetas y las columnas JSON a la tabla `imagenes`. */
@@ -98,9 +116,16 @@ class TravelPackagePhotosTest extends TestCase
         );
     }
 
-    public function test_sin_fotos_en_la_carpeta_se_usan_las_de_la_base_de_datos(): void
+    public function test_sin_fotos_en_la_carpeta_se_descarga_la_columna_json(): void
     {
+        // Las columnas `imagen` e `imagenes` ya no se sirven como texto: el
+        // comando las baja a la carpeta del paquete y la galería sale de ahí.
+        Http::fake([
+            'cdn.example.com/*' => Http::response('contenido-jpeg', 200, ['Content-Type' => 'image/jpeg']),
+        ]);
+
         $paquete = TravelPackage::create([
+            'empresa_id' => $this->crearEmpresa()->id,
             'nombre' => 'Tour Solo DB',
             'slug' => 'tour-solo-db-' . uniqid(),
             'precio_desde' => 100,
@@ -110,13 +135,45 @@ class TravelPackagePhotosTest extends TestCase
             'imagenes' => ['https://cdn.example.com/extra.jpg'],
         ]);
 
+        $carpeta = public_path('images/paquetes/' . $paquete->slug);
+        $this->carpetas[] = $carpeta;
+
         $this->sincronizar();
 
         $imagenes = $this->getJson('/api/travel-packages/' . $paquete->slug)->json('data.images');
 
-        $this->assertSame(
-            ['https://cdn.example.com/portada.jpg', 'https://cdn.example.com/extra.jpg'],
-            $imagenes
-        );
+        $base = 'http://localhost/images/paquetes/' . $paquete->slug . '/';
+
+        $this->assertCount(2, $imagenes);
+        $this->assertStringStartsWith($base . 'd-', $imagenes[0]);
+        $this->assertStringEndsWith('.jpg', $imagenes[1]);
+    }
+
+    public function test_una_url_que_no_se_puede_descargar_deja_la_portada_de_la_columna(): void
+    {
+        Http::fake([
+            'cdn.example.com/*' => Http::response('no existe', 404),
+        ]);
+
+        $paquete = TravelPackage::create([
+            'empresa_id' => $this->crearEmpresa()->id,
+            'nombre' => 'Tour Roto',
+            'slug' => 'tour-roto-' . uniqid(),
+            'precio_desde' => 100,
+            'moneda_iso' => 'BOB',
+            'activo' => true,
+            'imagen' => 'https://cdn.example.com/rota.jpg',
+        ]);
+
+        $this->carpetas[] = public_path('images/paquetes/' . $paquete->slug);
+
+        $this->sincronizar();
+
+        $response = $this->getJson('/api/travel-packages/' . $paquete->slug);
+
+        // Sin archivo en la carpeta, la portada sigue saliendo de la columna,
+        // así que el paquete no se queda sin imagen.
+        $response->assertJsonPath('data.images', ['https://cdn.example.com/rota.jpg']);
+        $response->assertJsonPath('data.image', 'https://cdn.example.com/rota.jpg');
     }
 }

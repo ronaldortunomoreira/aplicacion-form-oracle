@@ -153,17 +153,34 @@ class Accommodation extends Model
     }
 
     /**
+     * Carpeta pública que guarda las fotos de este alojamiento, relativa a
+     * public/: su subcarpeta propia, dentro de la carpeta de su tipo.
+     *
+     * Devuelve null si no tiene tipo asignado, porque entonces no hay carpeta
+     * posible y la galería queda vacía.
+     */
+    public function carpetaFotos(): ?string
+    {
+        $tipo = $this->accommodationType;
+
+        if (! $tipo) {
+            return null;
+        }
+
+        return $tipo->carpetaFotos() . '/' . $this->slug;
+    }
+
+    /**
      * Fotos del alojamiento.
      *
      * La única verdad sobre la galería es la tabla `imagenes`. Las carpetas
      * públicas (public/images/alojamientos/<carpeta>/<slug>/ y la carpeta del
-     * tipo, ver el LEEME.txt) y la columna `imagenes` quedan como fuentes que el
-     * comando `imagenes:sincronizar` vuelca a filas.
+     * tipo, ver el LEEME.txt) son de donde salen los archivos, y las columnas
+     * JSON quedan como red de seguridad para las URLs que
+     * `imagenes:sincronizar` no ha podido descargar.
      *
      * Si el alojamiento no tiene filas propias, se usan las del tipo, cuyas
-     * fotos son comunes a todos los alojamientos de ese tipo. Si no hay ninguna
-     * fila, se cae a las URLs de la columna `imagenes` para no dejar la galería
-     * vacía en instalaciones que aún no han sincronizado.
+     * fotos son comunes a todos los alojamientos de ese tipo.
      *
      * Devuelve rutas relativas ("/images/..."); galeriaAbsoluta() las convierte
      * en absolutas con el host real de la petición para que el frontend (que
@@ -173,10 +190,11 @@ class Accommodation extends Model
      */
     public function galeria(): array
     {
-        $fotos = $this->filasDeGaleria()
-            ->map(fn (Imagen $imagen) => $imagen->ruta)
-            ->values()
-            ->all();
+        [$carpeta, $filas] = $this->filasDeGaleria();
+
+        $fotos = $carpeta
+            ? $filas->map(fn (Imagen $imagen) => $imagen->rutaEn($carpeta))->values()->all()
+            : [];
 
         if (empty($fotos)) {
             $fotos = array_values(array_filter($this->imagenes ?? [], fn ($url) => is_string($url) && $url !== ''));
@@ -186,12 +204,17 @@ class Accommodation extends Model
     }
 
     /**
-     * Filas de `imagenes` que pintan la galería: las propias del alojamiento, y
-     * si no tiene, las de su tipo.
+     * Filas de `imagenes` que pintan la galería, junto con la carpeta en la que
+     * viven sus archivos: las propias del alojamiento, y si no tiene, las de su
+     * tipo.
      *
-     * @return \Illuminate\Support\Collection<int, Imagen>
+     * La carpeta viaja con las filas porque no es siempre la misma: las fotos
+     * propias están en la subcarpeta del alojamiento y las del tipo en la
+     * carpeta compartida de todos los de ese tipo.
+     *
+     * @return array{0: ?string, 1: \Illuminate\Support\Collection<int, Imagen>}
      */
-    private function filasDeGaleria()
+    private function filasDeGaleria(): array
     {
         $propias = $this->fotos()
             ->orderBy('orden')
@@ -199,20 +222,22 @@ class Accommodation extends Model
             ->get();
 
         if ($propias->isNotEmpty()) {
-            return $propias;
+            return [$this->carpetaFotos(), $propias];
         }
 
         $tipo = $this->accommodationType;
 
         if (! $tipo) {
-            return collect();
+            return [null, collect()];
         }
 
-        return Imagen::where('recurso_tipo', 'tipo_alojamiento')
+        $filas = Imagen::where('recurso_tipo', 'tipo_alojamiento')
             ->where('recurso_id', $tipo->id)
             ->orderBy('orden')
             ->orderBy('id')
             ->get();
+
+        return [$filas->isEmpty() ? null : $tipo->carpetaFotos(), $filas];
     }
 
     /**

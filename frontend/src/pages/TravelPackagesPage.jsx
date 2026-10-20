@@ -73,7 +73,7 @@ export default function TravelPackagesPage() {
       if (pais !== 'todos' && p.country_slug !== pais) return false;
       if (!q) return true;
 
-      return [p.name, p.city, p.destination, p.country, p.presentation_text]
+      return [p.name, p.city, p.country, p.presentation_text]
         .some((campo) => normalizar(campo).includes(q));
     });
 

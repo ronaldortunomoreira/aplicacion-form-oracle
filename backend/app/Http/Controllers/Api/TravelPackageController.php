@@ -14,20 +14,16 @@ class TravelPackageController extends Controller
         $idioma = $request->get('lang', 'es');
 
         $query = TravelPackage::query()
-            ->with(['country', 'destination'])
+            ->with(['empresa.pais'])
             ->where('activo', true);
 
+        // El país del paquete no es una columna propia: lo hereda de la empresa
+        // que lo publica, así que el filtro se recorre por esa relación.
         if ($request->filled('country') && $request->country !== 'all') {
             $country = trim($request->country);
-            $query->whereHas('country', function ($q) use ($country) {
+            $query->whereHas('empresa.pais', function ($q) use ($country) {
                 $q->where('slug', str($country)->slug())
                   ->orWhere('iso2', strtoupper($country));
-            });
-        }
-
-        if ($request->filled('destination')) {
-            $query->whereHas('destination', function ($q) use ($request) {
-                $q->where('slug', $request->destination);
             });
         }
 
@@ -49,7 +45,7 @@ class TravelPackageController extends Controller
     {
         $idioma = $request->get('lang', 'es');
 
-        $paquete = TravelPackage::with(['country', 'destination'])
+        $paquete = TravelPackage::with('empresa.pais')
             ->where('slug', $slug)
             ->where('activo', true)
             ->firstOrFail();
@@ -83,11 +79,12 @@ class TravelPackageController extends Controller
             'image' => $galeria[0] ?? null,
             'featured' => (bool) $p->destacado,
             'order' => (int) $p->orden,
-            'country' => $p->country?->nombre,
-            'country_slug' => $p->country?->slug,
-            'country_iso2' => $p->country?->iso2,
-            'destination' => $p->destination?->nombre,
-            'destination_slug' => $p->destination?->slug,
+            // El país no es del paquete sino de la empresa que lo publica. Si
+            // esa empresa no tiene país publicable, el paquete sale sin país y
+            // no aparece en el filtro de la página de paquetes.
+            'country' => $p->paisDeEmpresa()?->nombre,
+            'country_slug' => $p->paisDeEmpresa()?->slug,
+            'country_iso2' => $p->paisDeEmpresa()?->iso2,
         ];
 
         if ($full) {

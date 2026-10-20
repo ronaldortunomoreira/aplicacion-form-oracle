@@ -14,8 +14,7 @@ class TravelPackage extends Model
     protected $table = "travel_packages";
 
     protected $fillable = [
-        "pais_id",
-        "destino_id",
+        "empresa_id",
         "nombre",
         "slug",
         "ciudad",
@@ -51,14 +50,34 @@ class TravelPackage extends Model
         "longitud" => "decimal:11",
     ];
 
-    public function country(): BelongsTo
+    /**
+     * Empresa que publica el paquete.
+     *
+     * Es obligatoria: la columna no admite null, así que no se publica un tour
+     * sin una empresa detrás, y la base de datos no deja borrar una empresa que
+     * tenga paquetes (RESTRICT).
+     */
+    public function empresa(): BelongsTo
     {
-        return $this->belongsTo(Pais::class, "pais_id");
+        return $this->belongsTo(Empresa::class, "empresa_id");
     }
 
-    public function destination(): BelongsTo
+    /**
+     * País del paquete, que no es suyo: lo hereda de la empresa que lo publica.
+     *
+     * Una empresa de un país no publicable no tiene país, y su paquete tampoco,
+     * así que este valor puede ser null.
+     *
+     * Se llama como método, `$paquete->paisDeEmpresa()`, y no como atributo:
+     * Eloquent trata cualquier método sin argumentos al que se accede con `$p->x`
+     * como una relación, y exige que devuelva un Relation. Como aquí se devuelve
+     * un modelo suelto, `$p->paisDeEmpresa` explota con "must return a
+     * relationship instance". Es el mismo motivo por el que `presentacion()` o
+     * `incluye()` también se llaman como métodos.
+     */
+    public function paisDeEmpresa(): ?Pais
     {
-        return $this->belongsTo(Destination::class, "destino_id");
+        return $this->empresa?->pais;
     }
 
     public function presentacion($idioma = null)
@@ -100,15 +119,22 @@ class TravelPackage extends Model
     }
 
     /**
+     * Carpeta pública que guarda las fotos de este paquete, relativa a public/.
+     *
+     * Es una carpeta por paquete, con su slug como nombre.
+     */
+    public function carpetaFotos(): string
+    {
+        return "images/paquetes/" . $this->slug;
+    }
+
+    /**
      * Fotos del paquete turístico.
      *
      * La única verdad sobre la galería es la tabla `imagenes`. La carpeta
-     * pública public/images/paquetes/{slug}/ y las columnas `imagen` e
-     * `imagenes` quedan como fuentes que el comando `imagenes:sincronizar` vuelca
-     * a filas.
-     *
-     * Si no hay ninguna fila, se cae a esas columnas para no dejar la galería
-     * vacía en instalaciones que aún no han sincronizado.
+     * pública public/images/paquetes/{slug}/ es de donde salen los archivos, y
+     * las columnas `imagen` e `imagenes` quedan como red de seguridad para las
+     * URLs que `imagenes:sincronizar` no ha podido descargar.
      *
      * Devuelve rutas relativas ("/images/..."); galeriaAbsoluta() las convierte
      * en absolutas con el host real de la petición para que el frontend (que
@@ -118,17 +144,19 @@ class TravelPackage extends Model
      */
     public function galeria(): array
     {
+        $carpeta = $this->carpetaFotos();
+
         $fotos = $this->fotos()
-            ->orderBy('orden')
-            ->orderBy('id')
+            ->orderBy("orden")
+            ->orderBy("id")
             ->get()
-            ->map(fn (Imagen $imagen) => $imagen->ruta)
+            ->map(fn (Imagen $imagen) => $imagen->rutaEn($carpeta))
             ->values()
             ->all();
 
         if (empty($fotos)) {
             $guardadas = array_merge(array_filter([$this->imagen]), $this->imagenes ?? []);
-            $fotos = array_values(array_filter($guardadas, fn ($url) => is_string($url) && $url !== ''));
+            $fotos = array_values(array_filter($guardadas, fn ($url) => is_string($url) && $url !== ""));
         }
 
         return $fotos;
