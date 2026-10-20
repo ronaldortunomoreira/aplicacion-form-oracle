@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\File;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class TravelPackage extends Model
 {
@@ -102,43 +102,58 @@ class TravelPackage extends Model
     /**
      * Fotos del paquete turístico.
      *
-     * El administrador coloca las fotos en la carpeta pública
-     * public/images/paquetes/{slug}/ (basta con arrastrar los archivos). Aquí se
-     * listan esas fotos, ordenadas por nombre, y se añaden después la portada
-     * (`imagen`) y las URLs ya guardadas en la columna `imagenes`, sin repetir.
+     * La única verdad sobre la galería es la tabla `imagenes`. La carpeta
+     * pública public/images/paquetes/{slug}/ y las columnas `imagen` e
+     * `imagenes` quedan como fuentes que el comando `imagenes:sincronizar` vuelca
+     * a filas.
      *
-     * Devuelve rutas relativas ("/images/..."); el controlador las convierte en
-     * absolutas con el host real de la petición para que el frontend (que corre
-     * en otro puerto) pueda cargarlas.
+     * Si no hay ninguna fila, se cae a esas columnas para no dejar la galería
+     * vacía en instalaciones que aún no han sincronizado.
+     *
+     * Devuelve rutas relativas ("/images/..."); galeriaAbsoluta() las convierte
+     * en absolutas con el host real de la petición para que el frontend (que
+     * corre en otro puerto) pueda cargarlas.
      *
      * @return array<int, string>
      */
     public function galeria(): array
     {
-        $extensiones = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'];
-        $fotos = [];
+        $fotos = $this->fotos()
+            ->orderBy('orden')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Imagen $imagen) => $imagen->ruta)
+            ->values()
+            ->all();
 
-        $carpeta = public_path('images/paquetes/' . $this->slug);
-        if (File::isDirectory($carpeta)) {
-            $fotos = collect(File::files($carpeta))
-                ->filter(fn ($archivo) => in_array(strtolower($archivo->getExtension()), $extensiones, true))
-                ->sortBy(fn ($archivo) => $archivo->getFilename(), SORT_NATURAL | SORT_FLAG_CASE)
-                ->map(fn ($archivo) => '/images/paquetes/' . $this->slug . '/' . rawurlencode($archivo->getFilename()))
-                ->values()
-                ->all();
-        }
-
-        $guardadas = array_merge(
-            array_filter([$this->imagen]),
-            $this->imagenes ?? []
-        );
-
-        foreach ($guardadas as $url) {
-            if (is_string($url) && $url !== '' && ! in_array($url, $fotos, true)) {
-                $fotos[] = $url;
-            }
+        if (empty($fotos)) {
+            $guardadas = array_merge(array_filter([$this->imagen]), $this->imagenes ?? []);
+            $fotos = array_values(array_filter($guardadas, fn ($url) => is_string($url) && $url !== ''));
         }
 
         return $fotos;
+    }
+
+    /** Fotos registradas en la tabla para este paquete. */
+    public function fotos(): MorphMany
+    {
+        return $this->morphMany(Imagen::class, 'recurso', 'recurso_tipo', 'recurso_id', 'id');
+    }
+
+    /**
+     * Igual que galeria(), pero con las rutas de carpeta ya resueltas a URLs
+     * absolutas con el host de la petición. Lo usan el listado y el detalle del
+     * paquete por igual, de modo que la foto salga igual en todas las
+     * pantallas. Las URLs que ya vienen absolutas (p. ej. de la base de datos)
+     * se dejan tal cual.
+     *
+     * @return array<int, string>
+     */
+    public function galeriaAbsoluta(string $host): array
+    {
+        return array_map(
+            fn (string $url) => preg_match('#^(https?:)?//#i', $url) ? $url : $host . '/' . ltrim($url, '/'),
+            $this->galeria()
+        );
     }
 }

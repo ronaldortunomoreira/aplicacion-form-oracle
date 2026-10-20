@@ -1,11 +1,25 @@
 FOTOS DE LOS ALOJAMIENTOS
 =========================
 
-Cada tipo de alojamiento lee sus fotos de su propia carpeta:
+DONDE SE GUARDAN LAS FOTOS
+--------------------------
+La verdad sobre las galerias es la tabla `imagenes` de la base de datos: una
+fila por foto, con el dueño (alojamiento, tipo de alojamiento o paquete), la
+ruta, el orden y el origen (carpeta, base de datos o panel).
 
-    public/images/alojamientos/<carpeta>/
+Las carpetas de este directorio y la columna `imagenes` del alojamiento quedan
+como FUENTES: se vuelcan a la tabla `imagenes` con el comando
 
-Las carpetas disponibles, una por tipo, son:
+    php artisan imagenes:sincronizar
+
+Ese comando se ejecuta cada vez que se anaden o quitan fotos, y tambien al
+desplegar. Borra y vuelve a insertar solo las filas de origen carpeta y base de
+datos; las de origen "panel" (fotos subidas desde el panel de administracion) no
+se tocan.
+
+CARPETAS
+--------
+Cada tipo de alojamiento tiene su carpeta:
 
     public/images/alojamientos/hoteles/
     public/images/alojamientos/hostales/
@@ -13,16 +27,7 @@ Las carpetas disponibles, una por tipo, son:
     public/images/alojamientos/apartamentos/
     public/images/alojamientos/glamping/
 
-Como anadir fotos
------------------
-1. Copia tus imagenes (.jpg, .jpeg, .png, .webp, .gif o .avif) dentro de la
-   carpeta del tipo que corresponda.
-2. No hace falta tocar la base de datos ni el codigo.
-
-Fotos propias de un alojamiento
--------------------------------
-Para que un alojamiento tenga sus propias fotos (y no las genericas del tipo),
-crea una subcarpeta con su slug dentro de la carpeta del tipo:
+Y dentro puede haber una subcarpeta por alojamiento, con su slug como nombre:
 
     public/images/alojamientos/<carpeta>/<slug>/
 
@@ -31,17 +36,26 @@ grand-palace-luxury-hotel-spa), un hotel:
 
     public/images/alojamientos/hoteles/grand-palace-luxury-hotel-spa/
 
-Si esa subcarpeta existe y tiene imagenes, se usan esas. Si no existe o esta
-vacia, se usan las imagenes de la carpeta del tipo.
+Como anadir fotos
+-----------------
+1. Copia tus imagenes (.jpg, .jpeg, .png, .webp, .gif o .avif) dentro de la
+   subcarpeta del alojamiento, o en su defecto dentro de la carpeta del tipo.
+2. Ejecuta:  php artisan imagenes:sincronizar
+3. No hace falta tocar el codigo.
+
+QUE FOTOS SE VEN
+----------------
+- Si el alojamiento tiene fotos propias (subcarpeta por slug), se ven esas.
+- Si no, se ven las de la carpeta del tipo, comunes a todos los del tipo.
+- Y despues, sin repetir, las URLs guardadas en la columna `imagenes` del
+  alojamiento.
+- Si no hay ninguna fila, se cae a esa columna para no dejar la galeria vacia.
 
 Notas
 -----
-- La primera foto (por orden alfabetico del nombre de archivo) se usa como
-  portada en las tarjetas y en el listado.
+- La primera foto se usa como portada en las tarjetas y en el listado.
 - Para controlar el orden, numera los archivos: 01-portada.jpg, 02-salon.jpg...
-- Las fotos de la carpeta del tipo son comunes a TODOS los alojamientos de ese
-  tipo. La subcarpeta por slug es la que da fotos propias a un alojamiento.
-- En cualquier caso, despues van las URLs guardadas en la columna `imagenes` del
-  alojamiento, sin repetir.
-- Si no hay ninguna foto en las carpetas, se usan solo las imagenes guardadas en
-  la base de datos (si las hubiera).
+- Si borras un archivo de una carpeta, vuelve a ejecutar el comando para que
+  desaparezca de la galeria.
+- Las unidades de habitacion todavia no usan esta tabla: siguen con su columna
+  `imagenes` propia.

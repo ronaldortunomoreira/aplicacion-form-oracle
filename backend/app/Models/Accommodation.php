@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
-use Illuminate\Support\Facades\File;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Accommodation extends Model
 {
@@ -41,23 +41,6 @@ class Accommodation extends Model
         'images' => 'imagenes',
         'status' => 'estado',
     ];
-
-    /**
-     * Carpeta pública de fotos de cada tipo de alojamiento. El slug es el mismo
-     * que viaja en la URL (/alojamientos?type_slug=hotel) y el nombre de carpeta
-     * es la forma legible que ve el administrador al arrastrar las imágenes:
-     * public/images/alojamientos/<carpeta>/.
-     */
-    protected static $carpetasTipo = [
-        'hotel' => 'hoteles',
-        'hostal' => 'hostales',
-        'cabana' => 'cabanas',
-        'apartamento' => 'apartamentos',
-        'glamping' => 'glamping',
-    ];
-
-    /** Extensiones consideradas imagen al leer las carpetas públicas. */
-    private const EXTENSIONES_FOTO = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'];
 
     /**
      * 'country' sigue siendo una cadena con el nombre del país, igual que antes
@@ -172,16 +155,15 @@ class Accommodation extends Model
     /**
      * Fotos del alojamiento.
      *
-     * El administrador coloca las fotos en la carpeta pública de su tipo,
-     * public/images/alojamientos/<carpeta>/ (ver el LEEME.txt de esa carpeta).
-     * Dentro puede haber una subcarpeta por alojamiento, con el slug como nombre
-     * (public/images/alojamientos/<carpeta>/<slug>/), para que cada alojamiento
-     * tenga sus propias fotos. Si esa subcarpeta no aporta ninguna imagen, se usa
-     * la carpeta del tipo, cuyas fotos son comunes a todos los alojamientos de
-     * ese tipo.
+     * La única verdad sobre la galería es la tabla `imagenes`. Las carpetas
+     * públicas (public/images/alojamientos/<carpeta>/<slug>/ y la carpeta del
+     * tipo, ver el LEEME.txt) y la columna `imagenes` quedan como fuentes que el
+     * comando `imagenes:sincronizar` vuelca a filas.
      *
-     * En ambos casos las fotos se listan ordenadas por nombre y después se
-     * añaden las URLs ya guardadas en la columna `imagenes`, sin repetir.
+     * Si el alojamiento no tiene filas propias, se usan las del tipo, cuyas
+     * fotos son comunes a todos los alojamientos de ese tipo. Si no hay ninguna
+     * fila, se cae a las URLs de la columna `imagenes` para no dejar la galería
+     * vacía en instalaciones que aún no han sincronizado.
      *
      * Devuelve rutas relativas ("/images/..."); galeriaAbsoluta() las convierte
      * en absolutas con el host real de la petición para que el frontend (que
@@ -191,51 +173,58 @@ class Accommodation extends Model
      */
     public function galeria(): array
     {
-        $fotos = [];
+        $fotos = $this->filasDeGaleria()
+            ->map(fn (Imagen $imagen) => $imagen->ruta)
+            ->values()
+            ->all();
 
-        $carpetaTipo = static::$carpetasTipo[$this->accommodationType?->slug] ?? null;
-        if ($carpetaTipo) {
-            $relativaTipo = 'images/alojamientos/' . $carpetaTipo;
-
-            // La carpeta propia del alojamiento manda; si no tiene fotos, se cae
-            // a la del tipo (compartida por todos los alojamientos de ese tipo).
-            $relativa = $relativaTipo . '/' . $this->slug;
-            if ($this->fotosEnCarpeta(public_path($relativa))->isEmpty()) {
-                $relativa = $relativaTipo;
-            }
-
-            $fotos = $this->fotosEnCarpeta(public_path($relativa))
-                ->map(fn (string $nombre) => '/' . $relativa . '/' . rawurlencode($nombre))
-                ->all();
-        }
-
-        foreach ($this->imagenes ?? [] as $url) {
-            if (is_string($url) && $url !== '' && ! in_array($url, $fotos, true)) {
-                $fotos[] = $url;
-            }
+        if (empty($fotos)) {
+            $fotos = array_values(array_filter($this->imagenes ?? [], fn ($url) => is_string($url) && $url !== ''));
         }
 
         return $fotos;
     }
 
     /**
-     * Nombres de los archivos de imagen de una carpeta, ordenados de forma
-     * natural (01, 02, ... 10) para que la portada sea predecible. Devuelve una
-     * colección vacía si la carpeta no existe.
+     * Filas de `imagenes` que pintan la galería: las propias del alojamiento, y
+     * si no tiene, las de su tipo.
      *
-     * @return \Illuminate\Support\Collection<int, string>
+     * @return \Illuminate\Support\Collection<int, Imagen>
      */
-    private function fotosEnCarpeta(string $carpeta)
+    private function filasDeGaleria()
     {
-        if (! File::isDirectory($carpeta)) {
+        $propias = $this->fotos()
+            ->orderBy('orden')
+            ->orderBy('id')
+            ->get();
+
+        if ($propias->isNotEmpty()) {
+            return $propias;
+        }
+
+        $tipo = $this->accommodationType;
+
+        if (! $tipo) {
             return collect();
         }
 
-        return collect(File::files($carpeta))
-            ->filter(fn ($archivo) => in_array(strtolower($archivo->getExtension()), self::EXTENSIONES_FOTO, true))
-            ->sortBy(fn ($archivo) => $archivo->getFilename(), SORT_NATURAL | SORT_FLAG_CASE)
-            ->map(fn ($archivo) => $archivo->getFilename())
-            ->values();
+        return Imagen::where('recurso_tipo', 'tipo_alojamiento')
+            ->where('recurso_id', $tipo->id)
+            ->orderBy('orden')
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * Fotos registradas en la tabla para este alojamiento.
+     *
+     * La local key va explícita porque el trait TraduceColumnas traduce la clave
+     * que Eloquent resuelve por defecto (accommodation_id) y esa columna no
+     * existe en `alojamientos`: la clave real siempre es `id`.
+     */
+    public function fotos(): MorphMany
+    {
+        return $this->morphMany(Imagen::class, 'recurso', 'recurso_tipo', 'recurso_id', 'id');
     }
 
     /**

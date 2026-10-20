@@ -62,11 +62,12 @@ class TravelPackageController extends Controller
 
     private function aArray(TravelPackage $p, string $idioma, bool $full, Request $request): array
     {
-        // Las fotos salen de public/images/paquetes/{slug}/ (carpeta editable a
-        // mano) y, si no hay ninguna, de las URLs guardadas en la base de datos.
-        // galeria() ya deja primero las de la carpeta, así que la portada es la
-        // primera foto que el administrador haya puesto en la carpeta.
-        $galeria = $p->galeria();
+        // La galería sale de la tabla `imagenes`, que el comando
+        // imagenes:sincronizar rellena desde la carpeta pública
+        // public/images/paquetes/{slug}/ y desde las columnas `imagen` e
+        // `imagenes`. La portada es la primera foto de la galería, así que
+        // depende del orden que haya dado el administrador.
+        $galeria = $p->galeriaAbsoluta($request->getSchemeAndHttpHost());
 
         $data = [
             'id' => $p->id,
@@ -79,7 +80,7 @@ class TravelPackageController extends Controller
             'max_people' => (int) $p->max_personas,
             'starting_price' => (float) $p->precio_desde,
             'currency' => $p->moneda_iso,
-            'image' => $this->urlAbsoluta($galeria[0] ?? null, $request),
+            'image' => $galeria[0] ?? null,
             'featured' => (bool) $p->destacado,
             'order' => (int) $p->orden,
             'country' => $p->country?->nombre,
@@ -94,35 +95,11 @@ class TravelPackageController extends Controller
             $data['includes'] = $p->getIncluyeLista($idioma);
             $data['excludes'] = $p->getNoIncluyeLista($idioma);
             $data['itinerary'] = $p->getItinerarioLista($idioma);
-            $data['images'] = array_map(
-                fn (string $url) => $this->urlAbsoluta($url, $request),
-                $galeria
-            );
+            $data['images'] = $galeria;
             $data['latitude'] = $p->latitud;
             $data['longitude'] = $p->longitud;
         }
 
         return $data;
-    }
-
-    /**
-     * Convierte una ruta de foto en absoluta usando el host real de la petición.
-     *
-     * Las fotos de la carpeta se guardan como rutas relativas ("/images/...") y
-     * las URLs ya existentes (p. ej. de la base de datos) ya son absolutas. El
-     * frontend corre en otro puerto en desarrollo, así que no puede resolver una
-     * ruta relativa por sí solo: hay que devolverle la URL completa.
-     */
-    private function urlAbsoluta(?string $url, Request $request): ?string
-    {
-        if (! $url) {
-            return null;
-        }
-
-        if (preg_match('#^(https?:)?//#i', $url)) {
-            return $url;
-        }
-
-        return $request->getSchemeAndHttpHost() . '/' . ltrim($url, '/');
     }
 }

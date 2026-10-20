@@ -1,7 +1,25 @@
 FOTOS DE LOS PAQUETES TURISTICOS
 ================================
 
-Cada paquete turistico lee sus fotos de su propia carpeta:
+DONDE SE GUARDAN LAS FOTOS
+--------------------------
+La verdad sobre las galerias es la tabla `imagenes` de la base de datos: una
+fila por foto, con el dueño (alojamiento, tipo de alojamiento o paquete), la
+ruta, el orden y el origen (carpeta, base de datos o panel).
+
+Las carpetas de este directorio y las columnas `imagen` e `imagenes` del paquete
+quedan como FUENTES: se vuelcan a la tabla `imagenes` con el comando
+
+    php artisan imagenes:sincronizar
+
+Ese comando se ejecuta cada vez que se anaden o quitan fotos, y tambien al
+desplegar. Borra y vuelve a insertar solo las filas de origen carpeta y base de
+datos; las de origen "panel" (fotos subidas desde el panel de administracion) no
+se tocan.
+
+CARPETA
+-------
+Cada paquete tiene su propia carpeta, con su slug como nombre:
 
     public/images/paquetes/<slug-del-paquete>/
 
@@ -9,17 +27,25 @@ Por ejemplo, para el paquete con slug "tour-salar-de-uyuni-1-dia":
 
     public/images/paquetes/tour-salar-de-uyuni-1-dia/
 
+El <slug> es el mismo que aparece en la URL: /paquetes/<slug>
+
 Como anadir fotos
 -----------------
-1. Copia tus imagenes (.jpg, .jpeg, .png, .webp, .gif o .avif) dentro de la
-   carpeta del paquete.
-2. No hace falta tocar la base de datos ni el codigo.
+1. Crea la carpeta del paquete y copia dentro tus imagenes (.jpg, .jpeg, .png,
+   .webp, .gif o .avif).
+2. Ejecuta:  php artisan imagenes:sincronizar
+3. No hace falta tocar el codigo.
+
+QUE FOTOS SE VEN
+----------------
+- Las fotos de la carpeta del paquete, primero.
+- Y despues, sin repetir, la portada (`imagen`) y las URLs de la columna
+  `imagenes`, guardadas en la base de datos.
+- Si no hay ninguna fila, se cae a esas columnas para no dejar la galeria vacia.
 
 Notas
 -----
-- La primera foto (por orden alfabetico del nombre de archivo) se usa como
-  portada en las tarjetas y en el listado.
+- La primera foto se usa como portada en las tarjetas y en el listado.
 - Para controlar el orden, numera los archivos: 01-portada.jpg, 02-salon.jpg...
-- El <slug> es el mismo que aparece en la URL: /paquetes/<slug>
-- Si no hay ninguna foto en la carpeta, se usan las imagenes guardadas en la
-  base de datos (si las hubiera).
+- Si borras un archivo de la carpeta, vuelve a ejecutar el comando para que
+  desaparezca de la galeria.

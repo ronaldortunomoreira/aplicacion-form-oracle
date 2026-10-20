@@ -4,14 +4,20 @@ namespace Tests\Feature;
 
 use App\Models\TravelPackage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
  * Las fotos de un paquete turístico se toman de la carpeta pública
- * public/images/paquetes/{slug}/. Estos tests comprueban que la carpeta manda
- * sobre la base de datos, que el orden es estable y que los archivos que no son
- * imágenes se ignoran.
+ * public/images/paquetes/{slug}/ y de las columnas `imagen` e `imagenes`.
+ *
+ * El modelo no lee las carpetas en cada petición: las vuelca a la tabla
+ * `imagenes` el comando imagenes:sincronizar, y son las que se sirven. Por eso
+ * cada test ejecuta ese comando justo después de colocar sus archivos.
+ *
+ * Estos tests comprueban que la carpeta manda sobre la base de datos, que el
+ * orden es estable y que los archivos que no son imágenes se ignoran.
  */
 class TravelPackagePhotosTest extends TestCase
 {
@@ -41,13 +47,23 @@ class TravelPackagePhotosTest extends TestCase
             File::put($carpeta . '/' . $nombre, 'no-es-una-imagen-real');
         }
 
-        return TravelPackage::create($extra + [
+        $paquete = TravelPackage::create($extra + [
             'nombre' => 'Tour Fotos',
             'slug' => $slug,
             'precio_desde' => 100,
             'moneda_iso' => 'BOB',
             'activo' => true,
         ]);
+
+        $this->sincronizar();
+
+        return $paquete;
+    }
+
+    /** Vuelca las carpetas y las columnas JSON a la tabla `imagenes`. */
+    private function sincronizar(): void
+    {
+        Artisan::call('imagenes:sincronizar');
     }
 
     public function test_las_fotos_de_la_carpeta_aparecen_ordenadas_en_la_galeria(): void
@@ -93,6 +109,8 @@ class TravelPackagePhotosTest extends TestCase
             'imagen' => 'https://cdn.example.com/portada.jpg',
             'imagenes' => ['https://cdn.example.com/extra.jpg'],
         ]);
+
+        $this->sincronizar();
 
         $imagenes = $this->getJson('/api/travel-packages/' . $paquete->slug)->json('data.images');
 
