@@ -1,0 +1,102 @@
+erDiagram
+
+    %% HospedaYa - esquema en español
+    %% La API y el frontend siguen viendo estos campos en inglés
+    %% (traducidos por App\Models\Concerns\TraduceColumnas).
+    TIPOS_ALOJAMIENTO ||--o{ ALOJAMIENTOS : "tipo_alojamiento_id ON DELETE CASCADE"
+    UNIDADES_HABITACION ||--o{ RESERVAS : "unidad_habitacion_id ON DELETE RESTRICT"
+    ALOJAMIENTOS ||--o{ UNIDADES_HABITACION : "alojamiento_id ON DELETE CASCADE"
+    EMPRESAS ||--o{ ALOJAMIENTOS : "empresa_id ON DELETE SET NULL"
+
+    TIPOS_ALOJAMIENTO {
+        bigint id PK
+        string nombre
+        string slug UK
+        string icono "def building"
+        text descripcion "nullable"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    ALOJAMIENTOS {
+        bigint id PK
+        bigint tipo_alojamiento_id FK
+        string nombre
+        string slug UK
+        string titulo "nullable"
+        text descripcion
+        string direccion
+        string ciudad
+        string provincia "nullable"
+        string pais
+        bigint empresa_id FK "nullable, empresa propietaria"
+        decimal latitud "nullable"
+        decimal longitud "nullable"
+        tinyint estrellas "nullable"
+        decimal valoracion_huesped "def 9.0"
+        int numero_resenas "def 0"
+        string hora_entrada "def 15:00"
+        string hora_salida "def 11:00"
+        text amenidades "nullable"
+        text politicas "nullable"
+        text imagenes "nullable"
+        enum estado "active | maintenance | inactive, def active"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    UNIDADES_HABITACION {
+        bigint id PK
+        bigint alojamiento_id FK
+        string nombre
+        enum tipo_unidad "entire_place | private_room | shared_room, def private_room"
+        smallint capacidad_adultos "def 2"
+        smallint capacidad_ninos "def 0"
+        smallint total_unidades "def 1"
+        decimal precio_base_noche
+        decimal tarifa_limpieza "def 0.00"
+        enum tipo_bano "private | shared, def private"
+        text distribucion_camas "nullable"
+        text amenidades "nullable"
+        text imagenes "nullable"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    RESERVAS {
+        bigint id PK
+        string codigo_reserva UK
+        bigint unidad_habitacion_id FK
+        string nombre_huesped
+        string correo_huesped
+        string telefono_huesped
+        string documento_huesped "nullable"
+        date fecha_entrada
+        date fecha_salida
+        smallint adultos "def 1"
+        smallint ninos "def 0"
+        smallint noches "def 1"
+        decimal precio_noche
+        decimal tarifa_limpieza "def 0.00"
+        decimal impuestos "def 0.00"
+        decimal precio_total
+        enum metodo_pago "pay_at_property | credit_card | transfer, def pay_at_property"
+        enum estado_pago "pending | paid | refunded, def pending"
+        enum estado_reserva "confirmed | cancelled | completed, def confirmed"
+        text solicitudes_especiales "nullable"
+        string motivo_cancelacion "nullable"
+        datetime cancelada_en "nullable"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    EMPRESAS {
+        bigint id PK
+        string nombre
+        string correo UK
+        string codigo_pais "nullable, ISO2 p.ej. ES"
+        string whatsapp "nullable"
+        text detalle "nullable"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }

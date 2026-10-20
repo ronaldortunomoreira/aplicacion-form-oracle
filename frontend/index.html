@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      Valores por defecto. El script de prerender reescribe title, description,
+      canonical, Open Graph y JSON-LD en el HTML de cada ruta; estas etiquetas
+      cubren el desarrollo y sirven de respaldo si el prerender no se ejecuta.
+    -->
+    <title>HospedaYa | Hoteles, hostales, cabañas y apartados para reservar</title>
+    <meta
+      name="description"
+      content="Reserva hoteles, hostales, cabañas, apartamentos turísticos y glamping. Compara precios, consulta disponibilidad en tiempo real y confirma tu reserva sin cargos ocultos."
+    />
+    <meta name="robots" content="index, follow" />
+
+    <meta property="og:site_name" content="HospedaYa" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_ES" />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

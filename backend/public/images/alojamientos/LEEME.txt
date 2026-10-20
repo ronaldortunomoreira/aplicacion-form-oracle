@@ -1,0 +1,47 @@
+FOTOS DE LOS ALOJAMIENTOS
+=========================
+
+Cada tipo de alojamiento lee sus fotos de su propia carpeta:
+
+    public/images/alojamientos/<carpeta>/
+
+Las carpetas disponibles, una por tipo, son:
+
+    public/images/alojamientos/hoteles/
+    public/images/alojamientos/hostales/
+    public/images/alojamientos/cabanas/
+    public/images/alojamientos/apartamentos/
+    public/images/alojamientos/glamping/
+
+Como anadir fotos
+-----------------
+1. Copia tus imagenes (.jpg, .jpeg, .png, .webp, .gif o .avif) dentro de la
+   carpeta del tipo que corresponda.
+2. No hace falta tocar la base de datos ni el codigo.
+
+Fotos propias de un alojamiento
+-------------------------------
+Para que un alojamiento tenga sus propias fotos (y no las genericas del tipo),
+crea una subcarpeta con su slug dentro de la carpeta del tipo:
+
+    public/images/alojamientos/<carpeta>/<slug>/
+
+Por ejemplo, para Grand Palace Luxury Hotel & Spa (slug
+grand-palace-luxury-hotel-spa), un hotel:
+
+    public/images/alojamientos/hoteles/grand-palace-luxury-hotel-spa/
+
+Si esa subcarpeta existe y tiene imagenes, se usan esas. Si no existe o esta
+vacia, se usan las imagenes de la carpeta del tipo.
+
+Notas
+-----
+- La primera foto (por orden alfabetico del nombre de archivo) se usa como
+  portada en las tarjetas y en el listado.
+- Para controlar el orden, numera los archivos: 01-portada.jpg, 02-salon.jpg...
+- Las fotos de la carpeta del tipo son comunes a TODOS los alojamientos de ese
+  tipo. La subcarpeta por slug es la que da fotos propias a un alojamiento.
+- En cualquier caso, despues van las URLs guardadas en la columna `imagenes` del
+  alojamiento, sin repetir.
+- Si no hay ninguna foto en las carpetas, se usan solo las imagenes guardadas en
+  la base de datos (si las hubiera).

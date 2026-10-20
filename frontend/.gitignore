@@ -1,0 +1,22 @@
+# Dependencias
+node_modules/
+
+# Compilacion
+dist/
+*.local
+
+# Variables de entorno. .env.example si se versiona.
+.env
+.env.*
+!.env.example
+
+# Logs
+npm-debug.log*
+yarn-error.log*
+*.log
+
+# Editores
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store

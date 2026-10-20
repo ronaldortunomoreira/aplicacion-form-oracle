@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@layer base {
+  html {
+    /* Evita el scroll horizontal por elementos anchos. `clip` no crea un
+       contenedor de scroll, así el header `sticky` sigue funcionando. */
+    overflow-x: clip;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased selection:bg-rose-500 selection:text-white;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  }
+}
+
+@layer utilities {
+  /* Utilidades de scrollbar usadas en carruseles y modales. No vienen en el
+     core de Tailwind, así que se definen aquí. */
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 rounded-full;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
