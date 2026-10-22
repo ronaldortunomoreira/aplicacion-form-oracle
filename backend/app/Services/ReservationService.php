@@ -79,7 +79,7 @@ class ReservationService
             $reservation->currency = $unit->accommodation?->currency;
             $reservation->payment_method = $data['payment_method'] ?? 'pay_at_property';
             $reservation->payment_status = 'pending';
-            $reservation->reservation_status = 'confirmed';
+            $reservation->estado = 1;
             $reservation->special_requests = $data['special_requests'] ?? null;
             $reservation->save();
 
@@ -95,7 +95,7 @@ class ReservationService
     public function createPackageReservation(array $data): Reservation
     {
         return DB::transaction(function () use ($data) {
-            $package = \App\Models\TravelPackage::findOrFail($data['travel_package_id']);
+            $package = \App\Models\PaqueteTuristico::findOrFail($data['travel_package_id']);
             $reservation = new Reservation();
             $reservation->reservation_code = Reservation::generateCode();
             $reservation->travel_package_id = $package->id;
@@ -116,7 +116,7 @@ class ReservationService
             $reservation->currency = $package->moneda_iso ?? 'USD';
             $reservation->payment_method = $data['payment_method'] ?? 'pay_at_property';
             $reservation->payment_status = 'pending';
-            $reservation->reservation_status = 'confirmed';
+            $reservation->estado = 1;
             $reservation->special_requests = $data['special_requests'] ?? null;
             $reservation->save();
 
@@ -158,7 +158,7 @@ class ReservationService
             return null;
         }
 
-        $reservation->reservation_status = 'cancelled';
+        $reservation->estado = -1;
         $reservation->cancellation_reason = $reason;
         $reservation->cancelled_at = now();
         $reservation->save();

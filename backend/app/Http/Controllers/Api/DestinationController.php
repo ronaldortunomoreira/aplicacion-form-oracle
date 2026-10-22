@@ -30,7 +30,7 @@ class DestinationController extends Controller
 
         $query = Destination::query()
             ->with('country')
-            ->where('activo', true);
+            ->where('estado', true);
 
         if ($request->filled('country') && $request->country !== 'all') {
             $country = trim($request->country);
@@ -70,7 +70,7 @@ class DestinationController extends Controller
 
         $destino = Destination::with('country')
             ->where('slug', $slug)
-            ->where('activo', true)
+            ->where('estado', true)
             ->firstOrFail();
 
         $alojamientos = collect();
@@ -80,7 +80,7 @@ class DestinationController extends Controller
                 ->with(['accommodationType', 'roomUnits', 'pais'])
                 ->where('pais_id', $destino->pais_id)
                 ->where('ciudad', $destino->ciudad)
-                ->where('estado', 'active')
+                ->where('estado', true)
                 ->orderBy('valoracion_huesped', 'desc')
                 ->get()
                 ->transform(function ($item) {

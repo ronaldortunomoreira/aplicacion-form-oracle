@@ -158,7 +158,7 @@ class AccommodationReservationTest extends TestCase
 
     public function test_countries_ignores_inactive_rows(): void
     {
-        Pais::where('slug', 'espana')->update(['activo' => false]);
+        Pais::where('slug', 'espana')->update(['estado' => false]);
 
         $slugs = array_column($this->getJson('/api/countries')->assertStatus(200)->json('data'), 'slug');
 
@@ -198,7 +198,7 @@ class AccommodationReservationTest extends TestCase
     {
         $this->getJson('/api/countries/pais-que-no-existe')->assertStatus(404);
 
-        Pais::where('slug', 'colombia')->update(['activo' => false]);
+        Pais::where('slug', 'colombia')->update(['estado' => false]);
 
         // Un país desactivado deja de publicarse, también en su página propia.
         $this->getJson('/api/countries/colombia')->assertStatus(404);
@@ -246,7 +246,7 @@ class AccommodationReservationTest extends TestCase
      */
     public function test_every_published_country_has_distinct_spanish_and_english_text(): void
     {
-        $paises = Pais::where('activo', true)->get();
+        $paises = Pais::where('estado', true)->get();
 
         $this->assertNotEmpty($paises, 'Must be at least one active country');
 
@@ -351,7 +351,7 @@ class AccommodationReservationTest extends TestCase
         $lookupResponse->assertStatus(200)
                        ->assertJsonPath('success', true)
                        ->assertJsonPath('data.reservation_code', $code)
-                       ->assertJsonPath('data.reservation_status', 'confirmed');
+                       ->assertJsonPath('data.estado', 1);
 
         // 4. Cancel Reservation
         $cancelResponse = $this->putJson("/api/reservations/{$code}/cancel", [
@@ -361,7 +361,7 @@ class AccommodationReservationTest extends TestCase
 
         $cancelResponse->assertStatus(200)
                        ->assertJsonPath('success', true)
-                       ->assertJsonPath('data.reservation_status', 'cancelled');
+                       ->assertJsonPath('data.estado', -1);
     }
 
     public function test_reservation_stores_the_dial_code_of_the_country_chosen_in_the_form(): void

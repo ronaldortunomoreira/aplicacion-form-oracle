@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Empresa;
+use App\Models\Pais;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -14,13 +15,17 @@ class EmpresaRegistrationTest extends TestCase
      * Datos mínimos válidos de una solicitud, con el país y número por defecto
      * (España) para que cada test solo declare lo que le importa.
      *
+     * `company_name` es el nombre de la empresa y `name` el de la persona de
+     * contacto: son columnas distintas.
+     *
      * `country_code` es el ISO2 y no el prefijo: con todos los países en el
      * selector el prefijo ya no identifica a uno solo (+1 lo comparten 24).
      */
     private function solicitud(array $extra = []): array
     {
         return array_merge([
-            'name' => 'Hotel Sierra Nevada',
+            'name' => 'Ana Ramírez',
+            'company_name' => 'Hotel Sierra Nevada',
             'email' => 'reservas@sierranevada.example',
             'country_code' => 'ES',
             'whatsapp' => '600123456',
@@ -30,7 +35,8 @@ class EmpresaRegistrationTest extends TestCase
     public function test_a_visitor_can_list_requests(): void
     {
         Empresa::create([
-            'name' => 'Hotel Sierra Nevada',
+            'name' => 'Ana Ramírez',
+            'company_name' => 'Hotel Sierra Nevada',
             'email' => 'reservas@sierranevada.example',
             'country_code' => 'ES',
             'whatsapp' => '600123456',
@@ -48,6 +54,8 @@ class EmpresaRegistrationTest extends TestCase
             $response->json('data.0.email'),
             'La API debe exponer las columnas en inglés aunque la tabla esté en español.'
         );
+
+        $this->assertSame('Hotel Sierra Nevada', $response->json('data.0.company_name'));
     }
 
     public function test_a_visitor_can_submit_a_request(): void
@@ -58,15 +66,46 @@ class EmpresaRegistrationTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.name', 'Hotel Sierra Nevada')
+            ->assertJsonPath('data.name', 'Ana Ramírez')
+            ->assertJsonPath('data.company_name', 'Hotel Sierra Nevada')
             ->assertJsonPath('data.country_code', 'ES')
-            ->assertJsonPath('data.whatsapp', '600123456');
+            ->assertJsonPath('data.whatsapp', '600123456')
+            // Toda empresa nace activa.
+            ->assertJsonPath('data.status', true);
 
         $this->assertDatabaseHas('empresas', [
-            'nombre' => 'Hotel Sierra Nevada',
+            'nombre' => 'Ana Ramírez',
+            'nombre_empresa' => 'Hotel Sierra Nevada',
             'correo' => 'reservas@sierranevada.example',
             'codigo_pais' => 'ES',
             'whatsapp' => '600123456',
+            'estado' => 1,
+        ]);
+
+        // El país elegido está en el catálogo publicable, así que queda guardado
+        // su id para que los futuros paquetes de la empresa hereden el país.
+        $this->assertNotNull($response->json('data.pais_id'));
+        $this->assertDatabaseHas('empresas', [
+            'codigo_pais' => 'ES',
+            'pais_id' => Pais::where('iso2', 'ES')->value('id'),
+        ]);
+    }
+
+    public function test_a_request_from_a_non_publishable_country_has_no_pais_id(): void
+    {
+        // `paises` solo tiene los países publicables; una empresa de cualquier
+        // otra región del mundo se registra igual, pero sin fila a la que apuntar.
+        $response = $this->postJson('/api/companies', $this->solicitud([
+            'email' => 'hola@japan.example',
+            'country_code' => 'JP',
+            'whatsapp' => '9012345678',
+        ]));
+
+        $response->assertCreated()->assertJsonPath('data.pais_id', null);
+
+        $this->assertDatabaseHas('empresas', [
+            'codigo_pais' => 'JP',
+            'pais_id' => null,
         ]);
     }
 
@@ -88,17 +127,17 @@ class EmpresaRegistrationTest extends TestCase
         ]))->assertCreated();
 
         $this->assertDatabaseHas('empresas', [
-            'nombre' => 'Hotel Sierra Nevada',
+            'nombre' => 'Ana Ramírez',
             'correo' => 'hola@estrella.example',
             'detalle' => null,
         ]);
     }
 
-    public function test_name_email_country_and_whatsapp_are_required(): void
+    public function test_name_company_name_email_country_and_whatsapp_are_required(): void
     {
         $this->postJson('/api/companies', [])
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['name', 'email', 'country_code', 'whatsapp']);
+            ->assertJsonValidationErrors(['name', 'company_name', 'email', 'country_code', 'whatsapp']);
 
         $this->assertDatabaseCount('empresas', 0);
     }

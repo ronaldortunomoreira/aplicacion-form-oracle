@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Empresa;
+use App\Models\Pais;
 use App\Services\CatalogoPaises;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -58,6 +59,7 @@ class EmpresaController extends Controller
     {
         $datos = $request->validate([
             'name' => ['required', 'string', 'max:120'],
+            'company_name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'string', 'email', 'max:150', 'unique:empresas,correo'],
             'country_code' => ['required', 'string', Rule::in($this->catalogo->codigos())],
             // Holgado a propósito: el visitante puede pegar el número con
@@ -79,12 +81,22 @@ class EmpresaController extends Controller
             ]);
         }
 
+        // El formulario elige el país por su ISO2, que cubre las 245 regiones
+        // del mundo. La tabla `paises` solo tiene los países publicables, así que
+        // una empresa de un país que no está allí se guarda sin `pais_id`.
+        $pais = Pais::where('iso2', $datos['country_code'])->first();
+
         $empresa = Empresa::create([
             'name' => $datos['name'],
+            'company_name' => $datos['company_name'],
             'email' => $datos['email'],
             'country_code' => $datos['country_code'],
             'whatsapp' => $digitos,
             'detail' => $datos['detail'] ?? null,
+            'pais_id' => $pais?->id,
+            // Las empresas nacen activas (1); desactivarlas es una decisión
+            // posterior.
+            'status' => true,
         ]);
 
         return response()->json([

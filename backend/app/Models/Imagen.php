@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * Es la única verdad sobre las galerías, y solo indexa archivos que viven en
  * una carpeta pública: la tabla guarda el nombre del archivo y la ruta se arma
  * al leerla con la carpeta que le corresponde al dueño (ver `carpetaFotos()` en
- * Accommodation, AccommodationType y TravelPackage).
+ * Accommodation, AccommodationType y PaqueteTuristico).
  *
  * Las carpetas se llenan a mano (el administrador arrastra archivos) o con
  * `imagenes:sincronizar`, que además descarga a ellas las URLs que había en las

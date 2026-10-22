@@ -3,19 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\TravelPackage;
+use App\Models\PaqueteTuristico;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class TravelPackageController extends Controller
+class PaqueteTuristicoController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
         $idioma = $request->get('lang', 'es');
 
-        $query = TravelPackage::query()
+        $query = PaqueteTuristico::query()
             ->with(['empresa.pais'])
-            ->where('activo', true);
+            ->where('estado', true);
 
         // El país del paquete no es una columna propia: lo hereda de la empresa
         // que lo publica, así que el filtro se recorre por esa relación.
@@ -32,7 +32,7 @@ class TravelPackageController extends Controller
             ->orderBy('orden')
             ->orderBy('nombre')
             ->get()
-            ->map(fn (TravelPackage $p) => $this->aArray($p, $idioma, false, $request));
+            ->map(fn (PaqueteTuristico $p) => $this->aArray($p, $idioma, false, $request));
 
         return response()->json([
             'success' => true,
@@ -45,9 +45,9 @@ class TravelPackageController extends Controller
     {
         $idioma = $request->get('lang', 'es');
 
-        $paquete = TravelPackage::with('empresa.pais')
+        $paquete = PaqueteTuristico::with('empresa.pais')
             ->where('slug', $slug)
-            ->where('activo', true)
+            ->where('estado', true)
             ->firstOrFail();
 
         return response()->json([
@@ -56,13 +56,12 @@ class TravelPackageController extends Controller
         ]);
     }
 
-    private function aArray(TravelPackage $p, string $idioma, bool $full, Request $request): array
+    private function aArray(PaqueteTuristico $p, string $idioma, bool $full, Request $request): array
     {
         // La galería sale de la tabla `imagenes`, que el comando
         // imagenes:sincronizar rellena desde la carpeta pública
-        // public/images/paquetes/{slug}/ y desde las columnas `imagen` e
-        // `imagenes`. La portada es la primera foto de la galería, así que
-        // depende del orden que haya dado el administrador.
+        // public/images/paquetes/{slug}/. La portada es la primera foto de la
+        // galería, así que depende del orden que haya dado el administrador.
         $galeria = $p->galeriaAbsoluta($request->getSchemeAndHttpHost());
 
         $data = [

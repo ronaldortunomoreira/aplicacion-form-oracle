@@ -693,9 +693,9 @@ export function metadatosDestino({
 /**
  * Página de alta de solicitudes.
  *
- * Va indexada: es la vía de entrada de quien tiene un alojamiento y quiere que
- * lo publiquen, y el texto que la explica sí se prerenderiza, así que hay algo
- * que un buscador pueda leer sin ejecutar JavaScript.
+ * Va indexada: es la vía de entrada de quien tiene una empresa y quiere publicar
+ * sus alojamientos, y el texto que la explica sí se prerenderiza, así que hay
+ * algo que un buscador pueda leer sin ejecutar JavaScript.
  */
 export function metadatosEmpresas({ baseUrl, idioma = IDIOMA_POR_DEFECTO }) {
   const textos = copy(idioma);

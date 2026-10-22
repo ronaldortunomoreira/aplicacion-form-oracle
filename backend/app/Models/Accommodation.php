@@ -38,7 +38,6 @@ class Accommodation extends Model
         'check_out_time' => 'hora_salida',
         'amenities' => 'amenidades',
         'policies' => 'politicas',
-        'images' => 'imagenes',
         'status' => 'estado',
     ];
 
@@ -74,19 +73,18 @@ class Accommodation extends Model
         'check_out_time',
         'amenities',
         'policies',
-        'images',
         'status',
     ];
 
     protected $casts = [
         'amenidades' => 'array',
         'politicas' => 'array',
-        'imagenes' => 'array',
         'valoracion_huesped' => 'float',
         'estrellas' => 'integer',
         'numero_resenas' => 'integer',
         'latitud' => 'float',
         'longitud' => 'float',
+        'estado' => 'boolean',
     ];
 
     public function accommodationType(): BelongsTo
@@ -175,9 +173,9 @@ class Accommodation extends Model
      *
      * La única verdad sobre la galería es la tabla `imagenes`. Las carpetas
      * públicas (public/images/alojamientos/<carpeta>/<slug>/ y la carpeta del
-     * tipo, ver el LEEME.txt) son de donde salen los archivos, y las columnas
-     * JSON quedan como red de seguridad para las URLs que
-     * `imagenes:sincronizar` no ha podido descargar.
+     * tipo, ver el LEEME.txt) son de donde salen los archivos, que el comando
+     * imagenes:sincronizar vuelca a la tabla. Así la galería nunca mezcla
+     * archivos con textos de la base de datos.
      *
      * Si el alojamiento no tiene filas propias, se usan las del tipo, cuyas
      * fotos son comunes a todos los alojamientos de ese tipo.
@@ -192,15 +190,9 @@ class Accommodation extends Model
     {
         [$carpeta, $filas] = $this->filasDeGaleria();
 
-        $fotos = $carpeta
+        return $carpeta
             ? $filas->map(fn (Imagen $imagen) => $imagen->rutaEn($carpeta))->values()->all()
             : [];
-
-        if (empty($fotos)) {
-            $fotos = array_values(array_filter($this->imagenes ?? [], fn ($url) => is_string($url) && $url !== ''));
-        }
-
-        return $fotos;
     }
 
     /**

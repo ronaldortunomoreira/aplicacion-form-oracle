@@ -19,7 +19,7 @@ class AccommodationController extends Controller
     {
         $query = Accommodation::query()
             ->with(['accommodationType', 'roomUnits', 'pais'])
-            ->where('estado', 'active');
+            ->where('estado', true);
 
         // Filter by category / type
         if ($request->filled('type_slug') && $request->type_slug !== 'all') {
@@ -129,7 +129,7 @@ class AccommodationController extends Controller
                       total_unidades > (
                           SELECT COUNT(*) FROM reservas
                           WHERE reservas.unidad_habitacion_id = unidades_habitacion.id
-                            AND reservas.estado_reserva = 'confirmed'
+                            AND reservas.estado IN (1, 2)
                             AND reservas.fecha_entrada < ?
                             AND reservas.fecha_salida > ?
                       )
@@ -295,7 +295,7 @@ class AccommodationController extends Controller
     {
         $query = Accommodation::query()
             ->join('paises', 'alojamientos.pais_id', '=', 'paises.id')
-            ->where('alojamientos.estado', 'active')
+            ->where('alojamientos.estado', true)
             // `whereHas` sobre la relación no sirve aquí porque la consulta es un
             // join puro: se filtra por la columna de la tabla unida.
             ->whereNotNull('alojamientos.ciudad');
@@ -348,7 +348,7 @@ class AccommodationController extends Controller
         $idioma = $request->get('lang', 'es');
 
         $paises = Pais::query()
-            ->where('activo', true)
+            ->where('estado', true)
             ->withCount('accommodations')
             ->orderBy('nombre')
             ->get()
@@ -383,13 +383,13 @@ class AccommodationController extends Controller
         $idioma = $request->get('lang', 'es');
 
         $pais = Pais::where('slug', $slug)
-            ->where('activo', true)
+            ->where('estado', true)
             ->firstOrFail();
 
         $alojamientos = Accommodation::query()
             ->with(['accommodationType', 'roomUnits', 'pais'])
             ->where('pais_id', $pais->id)
-            ->where('estado', 'active')
+            ->where('estado', true)
             ->orderBy('valoracion_huesped', 'desc')
             ->get();
 

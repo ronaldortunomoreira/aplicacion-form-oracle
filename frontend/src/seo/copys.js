@@ -26,7 +26,7 @@ export const COPYS = {
       alojamientos: 'Alojamientos',
 explorar: 'Explorar Alojamientos',
       misReservas: 'Mis Reservas',
-      registrarHotel: 'Registrar alojamiento',
+      registrarHotel: 'Registra tu empresa',
       subtitulo: 'Hoteles, Hostales, Cabañas & Apartamentos',
     },
 
@@ -44,7 +44,6 @@ explorar: 'Explorar Alojamientos',
         `${datos.total} hoteles, hostales, cabañas, apartamentos turísticos y glamping. ` +
         `${datos.ciudades}. Confirma tu reserva sin cargos ocultos.`,
       imagenAlt: 'HospedaYa: hoteles, hostales y cabañas para reservar',
-      distintivo: 'Alojamientos Verificados • Sin Cargos Ocultos',
       titular: 'Encuentra tu hospedaje ideal,',
       titularResaltado: 'a tu propio estilo y presupuesto',
       entradilla:
@@ -270,16 +269,18 @@ misReservas: {
 
     /** Formulario para registrar un alojamiento. */
     empresas: {
-      titulo: (datos) => `Registra tu alojamiento | ${datos.marca}`,
+      titulo: (datos) => `Registra tu empresa | ${datos.marca}`,
       metadatos:
-        'Deja tu nombre, tu correo y una nota y registra tu alojamiento sin trámites ni esperas.',
-      h1: 'Registra tu alojamiento',
+        'Deja el nombre de tu empresa, tu correo y una nota y regístrala sin trámites ni esperas.',
+      h1: 'Registra tu empresa',
       resumen:
-        'Déjanos tu nombre, tu correo y un WhatsApp para poder contactarte. Revisaremos tu ' +
-        'alojamiento y te escribiremos.',
+        'Déjanos el nombre de tu empresa, tu nombre, tu correo y un WhatsApp para poder contactarte. ' +
+        'Revisaremos tu empresa y te escribiremos.',
       nombre: 'Nombre completo',
       nombreCompleto: 'Nombre completo',
       nombrePlaceholder: 'Ej. Ana Ramírez',
+      nombreEmpresa: 'Nombre de la empresa',
+      nombreEmpresaPlaceholder: 'Ej. Mi Hostel S.L.',
       correo: 'Correo electrónico',
       correoPlaceholder: 'Ej. ana@mi-hostel.com',
       pais: 'País',
@@ -297,6 +298,7 @@ misReservas: {
       errorCorreoDuplicado: 'Ya hay una solicitud registrada con ese correo.',
       errorGenerico: 'No se ha podido enviar la solicitud. Inténtalo de nuevo.',
       errorNombre: 'El nombre es obligatorio.',
+      errorNombreEmpresa: 'El nombre de la empresa es obligatorio.',
       errorCorreo: 'Indica un correo válido.',
       errorPais: 'Selecciona tu país.',
       errorWhatsapp: (datos) =>

@@ -13,9 +13,9 @@ dueño. El comando
 
     php artisan imagenes:sincronizar
 
-recorre las carpetas, baja a ellas las URLs que estuvieran guardadas en las
-columnas JSON de los alojamientos y deja la tabla al dia. Se ejecuta cada vez
-que se anaden o quitan fotos, y tambien al desplegar, despues de migrar.
+recorre las carpetas y deja la tabla al dia numerando las fotos 01, 02, 03...
+Se ejecuta cada vez que se anaden o quitan fotos, y tambien al desplegar,
+despues de migrar.
 
 CARPETAS
 --------
@@ -47,21 +47,17 @@ QUE FOTOS SE VEN
 ----------------
 - Si el alojamiento tiene fotos propias (subcarpeta por slug), se ven esas.
 - Si no, se ven las de la carpeta del tipo, comunes a todos los del tipo.
-- Si aun asi no hay ninguna, se cae a las URLs de la columna `imagenes` del
-  alojamiento, para las que el comando no haya podido descargar.
 
-Los archivos que empiezan por "d-" los ha descargado el comando a partir de una
-URL de la base de datos. No los renombres a mano: el nombre sale del hash de su
-URL, y es lo que permite re-sincronizar sin volver a bajarlos ni moverlos. Si
-quieres que un alojamiento herede las fotos de su tipo en vez de tenerlas
-propias, deja su subcarpeta sin imagenes.
+La carpeta es la unica verdad. El comando numera las fotos 01, 02, 03... de
+forma consecutiva, en el orden en que estan en disco. Como la tabla guarda solo
+el nombre del archivo, no hay que preocuparse por como se llamaba antes: el
+comando lo renombra el solo. Si quieres que un alojamiento herede las fotos de su
+tipo en vez de tenerlas propias, deja su subcarpeta sin imagenes.
 
 Notas
 -----
-- La primera foto (la de menor orden) se usa como portada en las tarjetas y en
-  el listado.
-- Para controlar el orden, numera los archivos: 01-portada.jpg, 02-salon.jpg...
-- Si borras un archivo de una carpeta, vuelve a ejecutar el comando para que
-  desaparezca de la galeria.
-- Las unidades de habitacion todavia no usan esta tabla: siguen con su columna
-  `imagenes` propia.
+- La primera foto (01) se usa como portada en las tarjetas y en el listado.
+- Si borras un archivo de una carpeta, vuelve a ejecutar el comando: la tabla se
+  recalcula y las demas fotos se renumeran solas para no dejar huecos.
+- Las unidades de habitacion no tienen fotos propias: la galeria que se ve es
+  siempre la del alojamiento.

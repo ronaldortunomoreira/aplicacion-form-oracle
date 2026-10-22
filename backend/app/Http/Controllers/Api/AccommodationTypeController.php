@@ -14,7 +14,7 @@ class AccommodationTypeController extends Controller
     public function index(): JsonResponse
     {
         $types = AccommodationType::withCount(['accommodations' => function ($query) {
-            $query->where('estado', 'active');
+            $query->where('estado', true);
         }])->get();
 
         return response()->json([

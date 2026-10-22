@@ -11,7 +11,7 @@ import { useIdioma } from '../hooks/useIdioma';
 import { metadatosHome } from '../seo/metadatos';
 import { copy } from '../seo/copys';
 import { accommodationService } from '../services/api';
-import { MdAutoAwesome, MdSentimentDissatisfied, MdAutorenew, MdKeyboardArrowUp, MdKeyboardArrowDown, MdFilterList } from 'react-icons/md';
+import { MdSentimentDissatisfied, MdAutorenew, MdKeyboardArrowUp, MdKeyboardArrowDown, MdFilterList } from 'react-icons/md';
 
 const FILTROS_INICIALES = {
   max_price: 300,
@@ -210,11 +210,6 @@ export default function HomePage() {
         <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#7ED6C8]/25 blur-3xl" aria-hidden="true" />
         <div className="absolute -bottom-28 -left-20 w-72 h-72 rounded-full bg-[#1E2A78]/40 blur-3xl" aria-hidden="true" />
         <div className="max-w-5xl mx-auto text-center relative z-10 space-y-4">
-          <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#7ED6C8]/15 text-[#D6EEF2] border border-[#7ED6C8]/30 text-xs font-bold tracking-wide uppercase">
-            <MdAutoAwesome className="w-3.5 h-3.5" />
-            <span>{textos.home.distintivo}</span>
-          </span>
-
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight">
             {textos.home.titular} <br className="hidden sm:block" />
             <span className="bg-gradient-to-r from-[#D6EEF2] via-[#FFFFFF] to-[#7ED6C8] bg-clip-text text-transparent">

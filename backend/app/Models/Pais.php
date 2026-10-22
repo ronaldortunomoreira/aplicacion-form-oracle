@@ -16,7 +16,7 @@ class Pais extends Model
         'name' => 'nombre',
         'primary_language' => 'idioma_principal',
         'presentation_text' => 'texto_presentacion',
-        'active' => 'activo',
+        'active' => 'estado',
         // slug, iso2 y moneda_iso ya coinciden en ambos idiomas: son códigos, no
         // texto traducible.
     ];
@@ -35,7 +35,7 @@ class Pais extends Model
 
     protected $casts = [
         'texto_presentacion' => 'array',
-        'activo' => 'boolean',
+        'estado' => 'boolean',
     ];
 
     public function accommodations(): HasMany

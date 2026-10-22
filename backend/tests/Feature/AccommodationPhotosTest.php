@@ -23,8 +23,9 @@ use Tests\TestCase;
  * `imagenes` el comando imagenes:sincronizar, y son las que se sirven. Por eso
  * cada test ejecuta ese comando justo después de colocar sus archivos.
  *
- * Los tests se crean sus propios alojamientos con un slug aleatorio para no
- * depender de las fotos reales que pueda haber en las carpetas del proyecto.
+ * El alojamiento no tiene columna de fotos: la carpeta es la única verdad. Los
+ * tests se crean sus propios alojamientos con un slug aleatorio para no depender
+ * de las fotos reales que pueda haber en las carpetas del proyecto.
  */
 class AccommodationPhotosTest extends TestCase
 {
@@ -72,8 +73,7 @@ class AccommodationPhotosTest extends TestCase
             'address' => 'Calle de prueba 1',
             'city' => 'Ciudad de prueba',
             'country_id' => $pais->id,
-            'status' => 'active',
-            'images' => [],
+            'status' => true,
         ], $extra));
     }
 
@@ -90,7 +90,6 @@ class AccommodationPhotosTest extends TestCase
             'base_price_per_night' => 100,
             'cleaning_fee' => 0,
             'bathroom_type' => 'private',
-            'images' => [],
         ]);
     }
 
@@ -121,24 +120,10 @@ class AccommodationPhotosTest extends TestCase
         return $ruta;
     }
 
-    /** Vuelca las carpetas y las columnas JSON a la tabla `imagenes`. */
+    /** Vuelca las carpetas a la tabla `imagenes`. */
     private function sincronizar(): void
     {
         Artisan::call('imagenes:sincronizar');
-    }
-
-    /**
-     * Apunta la subcarpeta propia de un alojamiento para borrarla al terminar el
-     * test. La usa el comando al descargar, así que el test no sabe de antemano
-     * que existe.
-     */
-    private function recordarSubcarpetaDe(Accommodation $alojamiento): void
-    {
-        $carpeta = $alojamiento->carpetaFotos();
-
-        if ($carpeta) {
-            $this->subcarpetas[] = public_path($carpeta);
-        }
     }
 
     public function test_la_subcarpeta_del_alojamiento_manda_sobre_la_del_tipo(): void
@@ -156,8 +141,9 @@ class AccommodationPhotosTest extends TestCase
 
         $base = self::HOST . '/images/alojamientos/glamping/' . $alojamiento->slug . '/';
 
-        // Las propias van primero, ordenadas, y la del tipo no se cuela.
-        $this->assertSame([$base . '01-portada.jpg', $base . '02-salon.jpg'], array_slice($imagenes, 0, 2));
+        // El comando renumera la carpeta: las propias van primero, consecutivas,
+        // y la del tipo no se cuela.
+        $this->assertSame([$base . '01.jpg', $base . '02.jpg'], array_slice($imagenes, 0, 2));
         $this->assertNotContains(self::HOST . '/images/alojamientos/glamping/00-tipo.jpg', $imagenes);
     }
 
@@ -172,7 +158,8 @@ class AccommodationPhotosTest extends TestCase
         $imagenes = $this->getJson('/api/accommodations/slug/' . $alojamiento->slug)->json('data.images');
 
         // La foto es del tipo, así que la ruta es la de la carpeta compartida,
-        // no la subcarpeta del alojamiento.
+        // no la subcarpeta del alojamiento. La carpeta del tipo no se renumera:
+        // se sirve tal cual está en disco.
         $this->assertSame(self::HOST . '/images/alojamientos/hostales/01-portada.jpg', $imagenes[0]);
         $this->assertStringNotContainsString($alojamiento->slug, $imagenes[0]);
     }
@@ -183,6 +170,7 @@ class AccommodationPhotosTest extends TestCase
 
         $this->fotoEnCarpetaTipo('hostales', '01-portada.jpg');
         // La subcarpeta existe pero sin fotos: no debe dejar la galería vacía.
+        // La carpeta del tipo no se renumera, así que la ruta conserva su nombre.
         $this->fotoEnSubcarpeta('hostales', $alojamiento->slug, 'notas.txt');
 
         $this->sincronizar();
@@ -207,66 +195,28 @@ class AccommodationPhotosTest extends TestCase
         $this->assertSame([self::HOST . '/images/alojamientos/hostales/foto.webp'], $imagenes);
     }
 
-    public function test_sin_fotos_en_carpetas_se_descarga_la_columna_json(): void
+    public function test_re_sincronizar_no_toca_la_red_ni_deshace_lo_que_hay_en_disco(): void
     {
-        // Las URLs de la columna JSON ya no se sirven como texto: el comando las
-        // baja a la carpeta del alojamiento y la galería sale de ahí.
-        Http::fake([
-            'cdn.example.test/*' => Http::response('contenido-jpeg', 200, ['Content-Type' => 'image/jpeg']),
-        ]);
+        Http::fake();
 
-        $db = ['https://cdn.example.test/uno.jpg', 'https://cdn.example.test/dos.jpg'];
-        $alojamiento = $this->crearAlojamiento('cabana', ['images' => $db]);
+        $alojamiento = $this->crearAlojamiento('hostal');
 
-        $this->recordarSubcarpetaDe($alojamiento);
-
-        $this->sincronizar();
-
-        $imagenes = $this->getJson('/api/accommodations/slug/' . $alojamiento->slug)->json('data.images');
-
-        $base = self::HOST . '/images/alojamientos/cabanas/' . $alojamiento->slug . '/';
-
-        $this->assertCount(2, $imagenes);
-        $this->assertStringStartsWith($base . 'd-', $imagenes[0]);
-        $this->assertStringEndsWith('.jpg', $imagenes[0]);
-    }
-
-    public function test_re_sincronizar_no_vuelve_a_descargar_lo_que_ya_esta_en_disco(): void
-    {
-        Http::fake([
-            'cdn.example.test/*' => Http::response('contenido-jpeg', 200, ['Content-Type' => 'image/jpeg']),
-        ]);
-
-        $alojamiento = $this->crearAlojamiento('hostal', ['images' => ['https://cdn.example.test/uno.jpg']]);
-
-        $this->recordarSubcarpetaDe($alojamiento);
+        $this->fotoEnSubcarpeta('hostales', $alojamiento->slug, '01-portada.jpg');
 
         $this->sincronizar();
         $this->sincronizar();
 
-        // El archivo se llama igual las dos veces, así que solo se baja una vez.
-        Http::assertSentCount(1);
-    }
+        // La carpeta manda: el comando nunca golpea la red para los
+        // alojamientos, ni la primera vez, porque su columna `imagenes` ya no
+        // existe. Aquí se comprueba que dos pasadas no generan peticiones.
+        $this->assertCount(0, Http::recorded());
 
-    public function test_una_url_que_no_se_puede_descargar_no_rompe_la_galeria(): void
-    {
-        Http::fake([
-            'cdn.example.test/*' => Http::response('no existe', 404),
-        ]);
+        $base = self::HOST . '/images/alojamientos/hostales/' . $alojamiento->slug . '/';
 
-        $db = ['https://cdn.example.test/rota.jpg'];
-        $alojamiento = $this->crearAlojamiento('cabana', ['images' => $db]);
-
-        $this->recordarSubcarpetaDe($alojamiento);
-
-        $this->sincronizar();
-
-        $imagenes = $this->getJson('/api/accommodations/slug/' . $alojamiento->slug)->json('data.images');
-
-        // No hay archivo, así que la galería cae a la columna JSON y la foto se
-        // sigue viendo: una descarga fallida no puede dejar el alojamiento sin
-        // imágenes.
-        $this->assertSame($db, $imagenes);
+        $this->assertSame(
+            [$base . '01.jpg'],
+            $this->getJson('/api/accommodations/slug/' . $alojamiento->slug)->json('data.images')
+        );
     }
 
     public function test_quitar_un_archivo_de_la_carpeta_lo_quita_de_la_galeria(): void
@@ -274,19 +224,22 @@ class AccommodationPhotosTest extends TestCase
         $alojamiento = $this->crearAlojamiento('glamping');
 
         $this->fotoEnSubcarpeta('glamping', $alojamiento->slug, '01-portada.jpg');
-        $borrada = $this->fotoEnSubcarpeta('glamping', $alojamiento->slug, '02-salon.jpg');
+        $this->fotoEnSubcarpeta('glamping', $alojamiento->slug, '02-salon.jpg');
 
         $this->sincronizar();
 
         // El administrador borra una foto de la carpeta y vuelve a sincronizar:
         // la tabla refleja el disco, así que la galería no conserva nada viejo.
-        File::delete($borrada);
+        // Tras la primera sincronización el comando renombró la segunda foto a
+        // 02.jpg, así que es ese archivo el que se borra.
+        File::delete(public_path('images/alojamientos/glamping/' . $alojamiento->slug . '/02.jpg'));
         $this->sincronizar();
 
         $base = self::HOST . '/images/alojamientos/glamping/' . $alojamiento->slug . '/';
 
+        // Al borrar la segunda, el comando renumera la que queda a 01.jpg.
         $this->assertSame(
-            [$base . '01-portada.jpg'],
+            [$base . '01.jpg'],
             $this->getJson('/api/accommodations/slug/' . $alojamiento->slug)->json('data.images')
         );
     }
@@ -300,7 +253,7 @@ class AccommodationPhotosTest extends TestCase
 
         $this->fotoEnSubcarpeta('hoteles', $alojamiento->slug, '01-portada.jpg');
         $this->sincronizar();
-        $portada = self::HOST . '/images/alojamientos/hoteles/' . $alojamiento->slug . '/01-portada.jpg';
+        $portada = self::HOST . '/images/alojamientos/hoteles/' . $alojamiento->slug . '/01.jpg';
 
         $create = $this->postJson('/api/reservations', [
             'room_unit_id' => $unidad->id,

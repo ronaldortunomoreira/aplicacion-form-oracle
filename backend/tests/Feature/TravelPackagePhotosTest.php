@@ -4,16 +4,15 @@ namespace Tests\Feature;
 
 use App\Models\Empresa;
 use App\Models\Pais;
-use App\Models\TravelPackage;
+use App\Models\PaqueteTuristico;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
  * Las fotos de un paquete turístico se toman de la carpeta pública
- * public/images/paquetes/{slug}/ y de las columnas `imagen` e `imagenes`.
+ * public/images/paquetes/{slug}/, que es la única verdad de su galería.
  *
  * El modelo no lee las carpetas en cada petición: las vuelca a la tabla
  * `imagenes` el comando imagenes:sincronizar, y son las que se sirven. Por eso
@@ -39,7 +38,7 @@ class TravelPackagePhotosTest extends TestCase
     }
 
     /** Crea un paquete y, si se piden, archivos dentro de su carpeta de fotos. */
-    private function crearPaqueteConFotos(array $archivos = [], array $extra = []): TravelPackage
+    private function crearPaqueteConFotos(array $archivos = [], array $extra = []): PaqueteTuristico
     {
         $slug = 'tour-fotos-' . uniqid();
         $carpeta = public_path('images/paquetes/' . $slug);
@@ -50,7 +49,7 @@ class TravelPackagePhotosTest extends TestCase
             File::put($carpeta . '/' . $nombre, 'no-es-una-imagen-real');
         }
 
-        $paquete = TravelPackage::create($extra + [
+        $paquete = PaqueteTuristico::create($extra + [
             'empresa_id' => $this->crearEmpresa()->id,
             'nombre' => 'Tour Fotos',
             'slug' => $slug,
@@ -94,14 +93,15 @@ class TravelPackagePhotosTest extends TestCase
 
         $base = 'http://localhost/images/paquetes/' . $paquete->slug . '/';
 
-        // Ordenadas por nombre de archivo: 01 antes que 02.
+        // Ordenadas por nombre de archivo: 01 antes que 02. El comando renumera
+        // la carpeta, así que los nombres finales son consecutivos.
         $this->assertSame(
-            [$base . '01-portada.jpg', $base . '02-salon.jpg'],
+            [$base . '01.jpg', $base . '02.jpg'],
             $response->json('data.images')
         );
 
         // La portada es la primera foto que hay en la carpeta.
-        $response->assertJsonPath('data.image', $base . '01-portada.jpg');
+        $response->assertJsonPath('data.image', $base . '01.jpg');
     }
 
     public function test_se_ignoran_los_archivos_que_no_son_imagen(): void
@@ -111,58 +111,22 @@ class TravelPackagePhotosTest extends TestCase
         $imagenes = $this->getJson('/api/travel-packages/' . $paquete->slug)->json('data.images');
 
         $this->assertSame(
-            ['http://localhost/images/paquetes/' . $paquete->slug . '/foto.webp'],
+            ['http://localhost/images/paquetes/' . $paquete->slug . '/01.webp'],
             $imagenes
         );
     }
 
-    public function test_sin_fotos_en_la_carpeta_se_descarga_la_columna_json(): void
+    public function test_un_paquete_sin_fotos_en_la_carpeta_no_tiene_galeria(): void
     {
-        // Las columnas `imagen` e `imagenes` ya no se sirven como texto: el
-        // comando las baja a la carpeta del paquete y la galería sale de ahí.
-        Http::fake([
-            'cdn.example.com/*' => Http::response('contenido-jpeg', 200, ['Content-Type' => 'image/jpeg']),
-        ]);
-
-        $paquete = TravelPackage::create([
+        // La carpeta es la única verdad: el paquete ya no guarda ninguna URL, así
+        // que sin archivos en disco la galería sale vacía.
+        $paquete = PaqueteTuristico::create([
             'empresa_id' => $this->crearEmpresa()->id,
-            'nombre' => 'Tour Solo DB',
-            'slug' => 'tour-solo-db-' . uniqid(),
+            'nombre' => 'Tour Sin Fotos',
+            'slug' => 'tour-sin-fotos-' . uniqid(),
             'precio_desde' => 100,
             'moneda_iso' => 'BOB',
             'activo' => true,
-            'imagen' => 'https://cdn.example.com/portada.jpg',
-            'imagenes' => ['https://cdn.example.com/extra.jpg'],
-        ]);
-
-        $carpeta = public_path('images/paquetes/' . $paquete->slug);
-        $this->carpetas[] = $carpeta;
-
-        $this->sincronizar();
-
-        $imagenes = $this->getJson('/api/travel-packages/' . $paquete->slug)->json('data.images');
-
-        $base = 'http://localhost/images/paquetes/' . $paquete->slug . '/';
-
-        $this->assertCount(2, $imagenes);
-        $this->assertStringStartsWith($base . 'd-', $imagenes[0]);
-        $this->assertStringEndsWith('.jpg', $imagenes[1]);
-    }
-
-    public function test_una_url_que_no_se_puede_descargar_deja_la_portada_de_la_columna(): void
-    {
-        Http::fake([
-            'cdn.example.com/*' => Http::response('no existe', 404),
-        ]);
-
-        $paquete = TravelPackage::create([
-            'empresa_id' => $this->crearEmpresa()->id,
-            'nombre' => 'Tour Roto',
-            'slug' => 'tour-roto-' . uniqid(),
-            'precio_desde' => 100,
-            'moneda_iso' => 'BOB',
-            'activo' => true,
-            'imagen' => 'https://cdn.example.com/rota.jpg',
         ]);
 
         $this->carpetas[] = public_path('images/paquetes/' . $paquete->slug);
@@ -171,9 +135,7 @@ class TravelPackagePhotosTest extends TestCase
 
         $response = $this->getJson('/api/travel-packages/' . $paquete->slug);
 
-        // Sin archivo en la carpeta, la portada sigue saliendo de la columna,
-        // así que el paquete no se queda sin imagen.
-        $response->assertJsonPath('data.images', ['https://cdn.example.com/rota.jpg']);
-        $response->assertJsonPath('data.image', 'https://cdn.example.com/rota.jpg');
+        $response->assertJsonPath('data.images', []);
+        $response->assertJsonPath('data.image', null);
     }
 }

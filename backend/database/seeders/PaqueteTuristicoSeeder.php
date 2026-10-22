@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use App\Models\Destination;
 use App\Models\Empresa;
 use App\Models\Pais;
-use App\Models\TravelPackage;
+use App\Models\PaqueteTuristico;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -18,9 +18,9 @@ use Illuminate\Support\Str;
  * con la de su país.
  *
  * No está cableado en DatabaseSeeder: se ejecuta a mano con
- * `php artisan db:seed --class=TravelPackageSeeder`.
+ * `php artisan db:seed --class=PaqueteTuristicoSeeder`.
  */
-class TravelPackageSeeder extends Seeder
+class PaqueteTuristicoSeeder extends Seeder
 {
     /** Empresas usadas durante la ejecución, indexadas por id de país. */
     private array $empresasPorPais = [];
@@ -36,11 +36,11 @@ class TravelPackageSeeder extends Seeder
         foreach ($destinos as $d) {
             $slug = 'tour-' . Str::slug($d->nombre) . '-1-dia';
 
-            if (TravelPackage::where('slug', $slug)->exists()) {
+            if (PaqueteTuristico::where('slug', $slug)->exists()) {
                 continue;
             }
 
-            TravelPackage::create([
+            PaqueteTuristico::create([
                 'empresa_id' => $this->empresaDe($d->pais_id),
                 'nombre' => 'Tour ' . $d->nombre . ' 1 Dia',
                 'slug' => $slug,
@@ -56,9 +56,8 @@ class TravelPackageSeeder extends Seeder
                 // La moneda sigue saliendo del país del destino, que es el mismo
                 // que el de la empresa: `destinos` no se toca.
                 'moneda_iso' => $d->country?->moneda_iso ?? 'USD',
-                'imagen' => $d->imagen,
                 'destacado' => true,
-                'activo' => true,
+                'estado' => true,
             ]);
         }
     }

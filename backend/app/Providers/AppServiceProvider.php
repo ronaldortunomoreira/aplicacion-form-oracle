@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use App\Models\Accommodation;
 use App\Models\AccommodationType;
-use App\Models\TravelPackage;
+use App\Models\PaqueteTuristico;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
 
@@ -31,7 +31,7 @@ class AppServiceProvider extends ServiceProvider
         Relation::morphMap([
             'alojamiento' => Accommodation::class,
             'tipo_alojamiento' => AccommodationType::class,
-            'paquete' => TravelPackage::class,
+            'paquete' => PaqueteTuristico::class,
         ]);
     }
 }

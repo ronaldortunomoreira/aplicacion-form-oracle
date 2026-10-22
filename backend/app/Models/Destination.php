@@ -28,7 +28,7 @@ class Destination extends Model
         'longitude' => 'longitud',
         'featured' => 'destacado',
         'order' => 'orden',
-        'active' => 'activo',
+        'active' => 'estado',
         // slug coincide en ambos idiomas: es un código, no texto traducible.
     ];
 
@@ -49,7 +49,7 @@ class Destination extends Model
     protected $casts = [
         'texto_presentacion' => 'array',
         'destacado' => 'boolean',
-        'activo' => 'boolean',
+        'estado' => 'boolean',
         'latitud' => 'float',
         'longitud' => 'float',
     ];

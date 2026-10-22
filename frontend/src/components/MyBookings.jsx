@@ -166,11 +166,11 @@ export default function MyBookings({ initialCode = '', initialEmail = '' }) {
                   {reservation.reservation_code}
                 </span>
                 <span className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase ${
-                  reservation.reservation_status === 'confirmed'
+                  [1, 2].includes(reservation.estado)
                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
                     : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
                 }`}>
-                  {reservation.reservation_status === 'confirmed' ? '✓ Confirmada' : '✗ Cancelada'}
+                  {[1, 2].includes(reservation.estado) ? '✓ Confirmada' : '✗ Cancelada'}
                 </span>
               </div>
             </div>
@@ -270,7 +270,7 @@ export default function MyBookings({ initialCode = '', initialEmail = '' }) {
             )}
 
             {/* Cancellation Status or Button */}
-            {reservation.reservation_status === 'confirmed' ? (
+            {[1, 2].includes(reservation.estado) ? (
               <div className="border-t border-slate-100 pt-5 flex justify-end">
                 <button
                   type="button"

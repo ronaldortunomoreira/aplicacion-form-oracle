@@ -43,11 +43,10 @@ class Reservation extends Model
         'currency' => 'moneda_iso',
         'payment_method' => 'metodo_pago',
         'payment_status' => 'estado_pago',
-        'reservation_status' => 'estado_reserva',
         'special_requests' => 'solicitudes_especiales',
         'cancellation_reason' => 'motivo_cancelacion',
         'cancelled_at' => 'cancelada_en',
-        'travel_package_id' => 'travel_package_id',
+        'travel_package_id' => 'paquete_turistico_id',
     ];
 
     protected $fillable = [
@@ -71,7 +70,7 @@ class Reservation extends Model
         'currency',
         'payment_method',
         'payment_status',
-        'reservation_status',
+        'estado',
         'special_requests',
         'cancellation_reason',
         'cancelled_at',
@@ -89,6 +88,7 @@ class Reservation extends Model
         'tarifa_limpieza' => 'float',
         'impuestos' => 'float',
         'precio_total' => 'float',
+        'estado' => 'integer',
         'cancelada_en' => 'datetime',
     ];
 
@@ -108,7 +108,7 @@ class Reservation extends Model
      */
     public function travelPackage(): BelongsTo
     {
-        return $this->belongsTo(TravelPackage::class, 'travel_package_id');
+        return $this->belongsTo(PaqueteTuristico::class, 'paquete_turistico_id');
     }
 
     /** ¿Es una reserva de paquete turístico en vez de de alojamiento? */

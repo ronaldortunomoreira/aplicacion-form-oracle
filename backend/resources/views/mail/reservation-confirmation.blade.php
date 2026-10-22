@@ -57,7 +57,7 @@
                                 </tr>
                                 <tr>
                                     <td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#64748b;">Estado</td>
-                                    <td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:14px;color:#16a34a;font-weight:bold;">{{ $reservation->reservation_status === 'confirmed' ? 'Confirmada' : $reservation->reservation_status }}</td>
+                                    <td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:14px;color:#16a34a;font-weight:bold;">{{ $reservation->estado === -1 ? 'Cancelada' : 'Confirmada' }}</td>
                                 </tr>
                             </table>
 

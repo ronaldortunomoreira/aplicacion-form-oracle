@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-class TravelPackage extends Model
+class PaqueteTuristico extends Model
 {
     use HasFactory;
 
-    protected $table = "travel_packages";
+    protected $table = "paquetes_turisticos";
 
     protected $fillable = [
         "empresa_id",
@@ -28,23 +28,20 @@ class TravelPackage extends Model
         "max_personas",
         "precio_desde",
         "moneda_iso",
-        "imagen",
-        "imagenes",
         "latitud",
         "longitud",
         "destacado",
         "orden",
-        "activo",
+        "estado",
     ];
 
     protected $casts = [
         "texto_presentacion" => "array",
-        "imagenes" => "array",
         "incluye" => "array",
         "no_incluye" => "array",
         "itinerario" => "array",
         "destacado" => "boolean",
-        "activo" => "boolean",
+        "estado" => "boolean",
         "precio_desde" => "decimal:2",
         "latitud" => "decimal:8",
         "longitud" => "decimal:11",
@@ -131,10 +128,10 @@ class TravelPackage extends Model
     /**
      * Fotos del paquete turístico.
      *
-     * La única verdad sobre la galería es la tabla `imagenes`. La carpeta
-     * pública public/images/paquetes/{slug}/ es de donde salen los archivos, y
-     * las columnas `imagen` e `imagenes` quedan como red de seguridad para las
-     * URLs que `imagenes:sincronizar` no ha podido descargar.
+     * La única verdad sobre la galería es la tabla `imagenes`, que se llena
+     * desde la carpeta pública public/images/paquetes/{slug}/. El paquete ya no
+     * guarda ninguna URL: la carpeta es la única fuente, así que la galería
+     * nunca mezcla archivos con textos de la base de datos.
      *
      * Devuelve rutas relativas ("/images/..."); galeriaAbsoluta() las convierte
      * en absolutas con el host real de la petición para que el frontend (que
@@ -146,20 +143,13 @@ class TravelPackage extends Model
     {
         $carpeta = $this->carpetaFotos();
 
-        $fotos = $this->fotos()
-            ->orderBy("orden")
-            ->orderBy("id")
+        return $this->fotos()
+            ->orderBy('orden')
+            ->orderBy('id')
             ->get()
             ->map(fn (Imagen $imagen) => $imagen->rutaEn($carpeta))
             ->values()
             ->all();
-
-        if (empty($fotos)) {
-            $guardadas = array_merge(array_filter([$this->imagen]), $this->imagenes ?? []);
-            $fotos = array_values(array_filter($guardadas, fn ($url) => is_string($url) && $url !== ""));
-        }
-
-        return $fotos;
     }
 
     /** Fotos registradas en la tabla para este paquete. */

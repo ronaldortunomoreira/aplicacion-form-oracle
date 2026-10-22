@@ -99,7 +99,7 @@ class ReservationController extends Controller
     public function storePackage(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'travel_package_id' => 'required|exists:travel_packages,id',
+            'travel_package_id' => 'required|exists:paquetes_turisticos,id',
             'guest_name' => 'required|string|max:150',
             'guest_email' => 'required|email|max:150',
             'guest_phone' => 'required|string|max:50',

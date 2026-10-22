@@ -6,7 +6,7 @@ use App\Mail\ReservationConfirmation;
 use App\Models\Empresa;
 use App\Models\Pais;
 use App\Models\Reservation;
-use App\Models\TravelPackage;
+use App\Models\PaqueteTuristico;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -28,16 +28,16 @@ class TravelPackageReservationTest extends TestCase
      * `empresa_id` es obligatorio: no existe un paquete sin empresa, así que
      * toda prueba que quiera un paquete tiene que empezar por su empresa.
      */
-    private function crearPaquete(array $extra = []): TravelPackage
+    private function crearPaquete(array $extra = []): PaqueteTuristico
     {
-        return TravelPackage::create($extra + [
+        return PaqueteTuristico::create($extra + [
             'empresa_id' => $this->crearEmpresa()->id,
             'nombre' => 'Tour Ciudad de Oro 1 Dia',
             'slug' => 'tour-ciudad-de-oro-1-dia',
             'duracion' => '1 dia',
             'precio_desde' => 500,
             'moneda_iso' => 'BOB',
-            'activo' => true,
+            'estado' => true,
         ]);
     }
 
@@ -103,7 +103,7 @@ class TravelPackageReservationTest extends TestCase
         // Sin unidad de habitación ni fechas: el paquete fija el precio entero.
         $this->assertDatabaseHas('reservas', [
             'codigo_reserva' => $code,
-            'travel_package_id' => $package->id,
+            'paquete_turistico_id' => $package->id,
             'unidad_habitacion_id' => null,
             'precio_total' => $package->precio_desde,
         ]);
@@ -139,7 +139,7 @@ class TravelPackageReservationTest extends TestCase
         $reservation->currency = $package->moneda_iso ?? 'USD';
         $reservation->payment_method = 'pay_at_property';
         $reservation->payment_status = 'pending';
-        $reservation->reservation_status = 'confirmed';
+        $reservation->estado = 1;
         $reservation->save();
 
         $html = (new ReservationConfirmation($reservation))->render();

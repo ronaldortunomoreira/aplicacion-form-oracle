@@ -78,11 +78,6 @@ class AccommodationSeeder extends Seeder
                     'pets' => 'No se admiten mascotas.',
                     'smoking' => 'Espacio 100% libre de humo.',
                 ],
-                'images' => [
-                    'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80',
-                    'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80',
-                ],
                 'units' => [
                     [
                         'name' => 'Suite Deluxe King con Balcón y Vista',
@@ -95,7 +90,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'private',
                         'bed_distribution' => ['1 Cama King Size'],
                         'amenities' => ['Baño privado de mármol', 'Bañera de hidromasaje', 'Smart TV 55"', 'Minibar de cortesía', 'Cafetera Nespresso', 'Balcón privado'],
-                        'images' => ['https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80'],
                     ],
                     [
                         'name' => 'Habitación Doble Superior Clásica',
@@ -108,7 +102,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'private',
                         'bed_distribution' => ['1 Cama Queen Size'],
                         'amenities' => ['Baño privado con ducha de lluvia', 'Aire acondicionado silencioso', 'WiFi de alta velocidad', 'Caja fuerte'],
-                        'images' => ['https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800&q=80'],
                     ],
                 ],
             ],
@@ -136,10 +129,6 @@ class AccommodationSeeder extends Seeder
                     'cancellation' => 'Cancelación gratuita hasta 7 días antes de la llegada.',
                     'pets' => 'Pet friendly (perros pequeños hasta 10kg con costo adicional).',
                 ],
-                'images' => [
-                    'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=800&q=80',
-                ],
                 'units' => [
                     [
                         'name' => 'Ocean Front Suite con Terraza Privada',
@@ -152,7 +141,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'private',
                         'bed_distribution' => ['1 Cama King', '1 Sofá Cama Doble'],
                         'amenities' => ['Vista directa al mar', 'Acceso directo a la playa', 'Jacuzzi en terraza', 'Servicio a la habitación 24h'],
-                        'images' => ['https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80'],
                     ],
                 ],
             ],
@@ -181,10 +169,6 @@ class AccommodationSeeder extends Seeder
                     'age' => 'Mayores de 18 años.',
                     'quiet_hours' => 'Silencio en dormitorios a partir de las 23:00.',
                 ],
-                'images' => [
-                    'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80',
-                ],
                 'units' => [
                     [
                         'name' => 'Cama en Dormitorio Mixto (6 literas tipo cápsula)',
@@ -197,7 +181,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'shared',
                         'bed_distribution' => ['1 Cama en Litera con cortina de privacidad'],
                         'amenities' => ['Baño compartido impecable', 'Enchufe y luz de lectura individual', 'Locker espacioso con cerradura electrónica', 'Ropa de cama incluida'],
-                        'images' => ['https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80'],
                     ],
                     [
                         'name' => 'Cama en Dormitorio Femenino (4 camas con baño interno)',
@@ -210,7 +193,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'private',
                         'bed_distribution' => ['1 Cama en Litera de Madera'],
                         'amenities' => ['Baño privado exclusivo para el dormitorio femenino', 'Espejo de cuerpo entero', 'Secador de pelo'],
-                        'images' => ['https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?auto=format&fit=crop&w=800&q=80'],
                     ],
                     [
                         'name' => 'Habitación Doble Privada (Económica)',
@@ -223,7 +205,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'shared',
                         'bed_distribution' => ['1 Cama Doble'],
                         'amenities' => ['Privacidad total', 'Baño compartido a pocos pasos', 'Ventana exterior', 'Toallas incluidas'],
-                        'images' => ['https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80'],
                     ],
                 ],
             ],
@@ -252,10 +233,6 @@ class AccommodationSeeder extends Seeder
                     'pets' => '¡Admitimos mascotas con alegría y sin costo extra!',
                     'wood' => 'Leña para chimenea incluida durante la estancia.',
                 ],
-                'images' => [
-                    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=800&q=80',
-                ],
                 'units' => [
                     [
                         'name' => 'Cabaña Familiar Panorámica Completa (Hasta 6 personas)',
@@ -268,7 +245,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'private',
                         'bed_distribution' => ['1 Cama King', '2 Camas Individuales', '1 Cama Marinera'],
                         'amenities' => ['Lugar entero', 'Chimenea a leña tradicional', 'Cocina rústica completa con horno', 'Parrilla exterior privada', 'Deck de madera vista al lago'],
-                        'images' => ['https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=800&q=80'],
                     ],
                     [
                         'name' => 'Refugio Alpino Romántico para Parejas con Hot Tub',
@@ -281,7 +257,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'private',
                         'bed_distribution' => ['1 Cama Queen'],
                         'amenities' => ['Lugar entero', 'Tina de hidromasaje exterior de ciprés', 'Cocina equipada', 'Calefacción central'],
-                        'images' => ['https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=800&q=80'],
                     ],
                 ],
             ],
@@ -309,10 +284,6 @@ class AccommodationSeeder extends Seeder
                     'cancellation' => 'Cancelación moderada: reembolso total hasta 5 días antes.',
                     'self_check_in' => 'Self check-in con cerradura inteligente 24 horas.',
                 ],
-                'images' => [
-                    'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80',
-                ],
                 'units' => [
                     [
                         'name' => 'Apartamento Entero de 2 Habitaciones + Balcón',
@@ -325,7 +296,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'private',
                         'bed_distribution' => ['1 Cama Queen', '1 Cama Doble'],
                         'amenities' => ['Lugar entero (78 m²)', 'Cocina de inducción con lavavajillas', 'Lavadora y secadora en unidad', 'Internet 300 Mbps simétrico', 'Smart TV 65" con Netflix'],
-                        'images' => ['https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80'],
                     ],
                 ],
             ],
@@ -353,10 +323,6 @@ class AccommodationSeeder extends Seeder
                     'cancellation' => 'Cancelación estricta hasta 7 días antes con 50% de reembolso.',
                     'breakfast' => 'Desayuno campestre incluido en la tarifa.',
                 ],
-                'images' => [
-                    'https://images.unsplash.com/photo-1510312305653-8ed496efae75?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1499696010180-025ef6e1a8f9?auto=format&fit=crop&w=800&q=80',
-                ],
                 'units' => [
                     [
                         'name' => 'Domo Geodésico Celestial con Baño Privado y Jacuzzi',
@@ -369,7 +335,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'private',
                         'bed_distribution' => ['1 Cama King Size'],
                         'amenities' => ['Cúpula transparente panorámica', 'Telescopio profesional', 'Jacuzzi privado exterior climatizado', 'Fogatero con bombones y leña', 'Baño ecológico privado'],
-                        'images' => ['https://images.unsplash.com/photo-1510312305653-8ed496efae75?auto=format&fit=crop&w=800&q=80'],
                     ],
                 ],
             ],
@@ -412,14 +377,6 @@ class AccommodationSeeder extends Seeder
                     'pets' => 'No se admiten mascotas.',
                     'smoking' => 'Habitaciones 100% libres de humo.',
                 ],
-                'images' => [
-                    'https://images.unsplash.com/photo-1755516931403-c01042817f64?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1692545715922-4aed22dad8c3?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1680210851458-b7dc5685e06e?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1692153142524-60285a93c249?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1759223607861-f0ef3e617739?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1637730826933-54287f79e1c3?auto=format&fit=crop&w=1200&q=80',
-                ],
                 'units' => [
                     [
                         'name' => 'Suite Business con Escritorio y Cama King',
@@ -432,7 +389,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'private',
                         'bed_distribution' => ['1 Cama King Size'],
                         'amenities' => ['Escritorio ejecutivo', 'Silla ergonómica', 'WiFi de alta velocidad', 'Smart TV 50"', 'Caja fuerte para portátil'],
-                        'images' => ['https://images.unsplash.com/photo-1680210851458-b7dc5685e06e?auto=format&fit=crop&w=800&q=80'],
                     ],
                     [
                         'name' => 'Suite Familiar de Dos Ambientes',
@@ -445,7 +401,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'private',
                         'bed_distribution' => ['1 Cama King Size', '1 Sofá Cama Doble'],
                         'amenities' => ['Dos ambientes separados', 'Cocina equipada', 'Minibar', 'Balcón a la calle'],
-                        'images' => ['https://images.unsplash.com/photo-1692153142524-60285a93c249?auto=format&fit=crop&w=800&q=80'],
                     ],
                 ],
             ],
@@ -473,14 +428,6 @@ class AccommodationSeeder extends Seeder
                     'cancellation' => 'Cancelación gratuita hasta 72 horas antes de la llegada.',
                     'pets' => 'Se admiten mascotas de pequeño tamaño con aprobación previa.',
                 ],
-                'images' => [
-                    'https://images.unsplash.com/photo-1750859468404-db01cc8c59c2?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1756680967373-c3205a8a8b31?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1672983666814-a0e43bd3b1b9?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1499696010180-025ef6e1a8f9?auto=format&fit=crop&w=1200&q=80',
-                ],
                 'units' => [
                     [
                         'name' => 'Habitación Deluxe con Acceso al Jardín',
@@ -493,7 +440,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'private',
                         'bed_distribution' => ['1 Cama Queen Size'],
                         'amenities' => ['Acceso directo al jardín', 'Bañera profunda', 'Ropa de cama de algodón', 'Almohadas de plumas'],
-                        'images' => ['https://images.unsplash.com/photo-1672983666814-a0e43bd3b1b9?auto=format&fit=crop&w=800&q=80'],
                     ],
                     [
                         'name' => 'Suite con Terraza Privada y Vista al Jardín',
@@ -506,7 +452,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'private',
                         'bed_distribution' => ['1 Cama King Size'],
                         'amenities' => ['Terraza amueblada', 'Hamaca de descanso', 'Desayuno servido en la habitación'],
-                        'images' => ['https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=800&q=80'],
                     ],
                 ],
             ],
@@ -534,14 +479,6 @@ class AccommodationSeeder extends Seeder
                     'cancellation' => 'Cancelación gratuita hasta 7 días antes de la llegada.',
                     'events' => 'Salones de convenciones disponibles para eventos y congresos.',
                 ],
-                'images' => [
-                    'https://images.unsplash.com/photo-1647937627312-e4f6589db6fd?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1731336479432-3eb5fdb3ab1c?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1731080647266-85cf1bc27162?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
-                ],
                 'units' => [
                     [
                         'name' => 'Habitación Confort con Vista a la Piscina',
@@ -554,7 +491,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'private',
                         'bed_distribution' => ['1 Cama King Size'],
                         'amenities' => ['Acceso a la piscina cubierta', 'Escritorio ejecutivo', 'Cafetera', 'Caja fuerte'],
-                        'images' => ['https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80'],
                     ],
                     [
                         'name' => 'Suite Ejecutiva para Hospedar Viajantes de Negocio',
@@ -567,7 +503,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'private',
                         'bed_distribution' => ['1 Cama King Size'],
                         'amenities' => ['Sala de reuniones para 4 personas', 'Impresora en habitación', 'Acceso al spa'],
-                        'images' => ['https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800&q=80'],
                     ],
                 ],
             ],
@@ -595,14 +530,6 @@ class AccommodationSeeder extends Seeder
                     'cancellation' => 'Cancelación gratuita hasta 48 horas antes de la llegada.',
                     'smoking' => 'Habitaciones 100% libres de humo.',
                 ],
-                'images' => [
-                    'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1660557989688-1564893ccf8c?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1529290130-4ca3753253ae?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?auto=format&fit=crop&w=1200&q=80',
-                ],
                 'units' => [
                     [
                         'name' => 'Habitación Clásica con Vista al Jardín Interior',
@@ -615,7 +542,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'private',
                         'bed_distribution' => ['1 Cama Queen Size'],
                         'amenities' => ['Baño de mármol', 'Albornoz y zapatillas', 'Minibar', 'Smart TV'],
-                        'images' => ['https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80'],
                     ],
                     [
                         'name' => 'Suite Real con Salón y Bañera Externa',
@@ -628,7 +554,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'private',
                         'bed_distribution' => ['1 Cama King Size', '1 Sofá Cama'],
                         'amenities' => ['Salón independiente', 'Bañera profunda', 'Vestidor privado', 'Acceso directo al spa'],
-                        'images' => ['https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80'],
                     ],
                 ],
             ],
@@ -656,14 +581,6 @@ class AccommodationSeeder extends Seeder
                     'cancellation' => 'Cancelación gratuita hasta 48 horas antes de la llegada.',
                     'pets' => 'Se admiten mascotas de pequeño tamaño.',
                 ],
-                'images' => [
-                    'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1510312305653-8ed496efae75?auto=format&fit=crop&w=1200&q=80',
-                    'https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=1200&q=80',
-                ],
                 'units' => [
                     [
                         'name' => 'Habitación Estándar con Vista al Jardín',
@@ -676,7 +593,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'private',
                         'bed_distribution' => ['1 Cama Queen Size'],
                         'amenities' => ['Balcón amueblado', 'Ducha de lluvia', 'Escritorio de trabajo', 'Cafetera de cápsulas'],
-                        'images' => ['https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80'],
                     ],
                     [
                         'name' => 'Suite Familiar con Acceso a la Piscina',
@@ -689,7 +605,6 @@ class AccommodationSeeder extends Seeder
                         'bathroom_type' => 'private',
                         'bed_distribution' => ['1 Cama King Size', '2 Camas Individuales'],
                         'amenities' => ['Acceso directo a la piscina', 'Cocina compacta', 'Lavadora y secadora', 'Vajilla completa'],
-                        'images' => ['https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80'],
                     ],
                 ],
             ],
@@ -731,8 +646,7 @@ class AccommodationSeeder extends Seeder
                 'check_out_time' => $item['check_out_time'],
                 'amenities' => $item['amenities'],
                 'policies' => $item['policies'],
-                'images' => $item['images'],
-                'status' => 'active',
+                'status' => true,
             ]);
 
             foreach ($item['units'] as $unit) {
@@ -748,7 +662,7 @@ class AccommodationSeeder extends Seeder
                     'bathroom_type' => $unit['bathroom_type'],
                     'bed_distribution' => $unit['bed_distribution'],
                     'amenities' => $unit['amenities'],
-                    'images' => $unit['images'],
+                    'status' => true,
                 ]);
             }
         }

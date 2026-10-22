@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   MdBusiness,
+  MdPerson,
   MdEmail,
   MdChat,
   MdForum,
@@ -13,10 +14,12 @@ import { copy } from '../seo/copys';
 import { useIdioma } from '../hooks/useIdioma';
 
 /**
- * Formulario para registrar un alojamiento.
+ * Formulario para registrar una empresa.
  *
- * Al enviar solo se muestra la confirmación de que la solicitud llegó: el
- * listado de solicitudes es interno y no se expone en la página.
+ * Pide el nombre de la empresa y el de la persona de contacto, que se guardan en
+ * columnas distintas (`nombre_empresa` y `nombre`). Al enviar solo se muestra la
+ * confirmación de que la solicitud llegó: el listado de solicitudes es interno y
+ * no se expone en la página.
  *
  * El selector ofrece todos los países con los que se puede validar un número de
  * WhatsApp, no solo los que tienen alojamientos publicados, y los carga de
@@ -33,6 +36,7 @@ export default function CompanyRegistration() {
   const textos = copy(idioma).empresas;
 
   const [name, setName] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [email, setEmail] = useState('');
   const [countries, setCountries] = useState([]);
   const [countryIso, setCountryIso] = useState('');
@@ -88,6 +92,7 @@ export default function CompanyRegistration() {
     setSuccessMsg('');
 
     if (!name.trim()) return setErrorMsg(textos.errorNombre);
+    if (!companyName.trim()) return setErrorMsg(textos.errorNombreEmpresa);
     if (!/^\S+@\S+\.\S+$/.test(email)) return setErrorMsg(textos.errorCorreo);
     if (!pais) return setErrorMsg(textos.errorPais);
     if (detail.length > 2000) return setErrorMsg(textos.errorDetalle);
@@ -101,6 +106,7 @@ export default function CompanyRegistration() {
       setSending(true);
       const res = await companyService.create({
         name: name.trim(),
+        company_name: companyName.trim(),
         email: email.trim(),
         country_code: pais.iso2,
         whatsapp: whatsapp.trim(),
@@ -109,6 +115,7 @@ export default function CompanyRegistration() {
 
       if (res.success) {
         setName('');
+        setCompanyName('');
         setEmail('');
         setWhatsapp('');
         setDetail('');
@@ -120,6 +127,8 @@ export default function CompanyRegistration() {
         setErrorMsg(textos.errorCorreoDuplicado);
       } else if (errores?.name) {
         setErrorMsg(textos.errorNombre);
+      } else if (errores?.company_name) {
+        setErrorMsg(textos.errorNombreEmpresa);
       } else if (errores?.country_code) {
         setErrorMsg(textos.errorPais);
       } else if (errores?.whatsapp) {
@@ -153,13 +162,35 @@ export default function CompanyRegistration() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label
+              htmlFor="empresa-nombre-empresa"
+              className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-1.5 ml-1"
+            >
+              {textos.nombreEmpresa}
+            </label>
+            <div className="relative">
+              <MdBusiness className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                id="empresa-nombre-empresa"
+                type="text"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder={textos.nombreEmpresaPlaceholder}
+                maxLength={120}
+                required
+                className="w-full pl-11 px-4 py-3 bg-slate-50 focus:bg-white text-slate-800 text-sm rounded-2xl border border-slate-200 focus:border-rose-500 focus:outline-hidden"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label
               htmlFor="empresa-nombre"
               className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-1.5 ml-1"
             >
               {textos.nombre}
             </label>
             <div className="relative">
-              <MdBusiness className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <MdPerson className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 id="empresa-nombre"
                 type="text"
@@ -172,7 +203,9 @@ export default function CompanyRegistration() {
               />
             </div>
           </div>
+        </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label
               htmlFor="empresa-correo"
@@ -194,9 +227,7 @@ export default function CompanyRegistration() {
               />
             </div>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label
               htmlFor="empresa-pais"
@@ -225,28 +256,28 @@ export default function CompanyRegistration() {
               ))}
             </select>
           </div>
+        </div>
 
-          <div>
-            <label
-              htmlFor="empresa-whatsapp"
-              className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-1.5 ml-1"
-            >
-              {textos.whatsapp}
-            </label>
-            <div className="relative">
-              <MdForum className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                id="empresa-whatsapp"
-                type="tel"
-                inputMode="tel"
-                value={whatsapp}
-                onChange={(e) => setWhatsapp(e.target.value)}
-                placeholder={pais?.phone_example || textos.whatsappPlaceholder}
-                maxLength={30}
-                required
-                className="w-full pl-11 px-4 py-3 bg-slate-50 focus:bg-white text-slate-800 text-sm rounded-2xl border border-slate-200 focus:border-rose-500 focus:outline-hidden"
-              />
-            </div>
+        <div>
+          <label
+            htmlFor="empresa-whatsapp"
+            className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-1.5 ml-1"
+          >
+            {textos.whatsapp}
+          </label>
+          <div className="relative">
+            <MdForum className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              id="empresa-whatsapp"
+              type="tel"
+              inputMode="tel"
+              value={whatsapp}
+              onChange={(e) => setWhatsapp(e.target.value)}
+              placeholder={pais?.phone_example || textos.whatsappPlaceholder}
+              maxLength={30}
+              required
+              className="w-full pl-11 px-4 py-3 bg-slate-50 focus:bg-white text-slate-800 text-sm rounded-2xl border border-slate-200 focus:border-rose-500 focus:outline-hidden"
+            />
           </div>
         </div>
 

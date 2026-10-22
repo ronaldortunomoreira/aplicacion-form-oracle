@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Empresa;
 use App\Models\Pais;
-use App\Models\TravelPackage;
+use App\Models\PaqueteTuristico;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -38,9 +38,9 @@ class TravelPackageEmpresaTest extends TestCase
         ]);
     }
 
-    private function crearPaquete(Empresa $empresa, array $extra = []): TravelPackage
+    private function crearPaquete(Empresa $empresa, array $extra = []): PaqueteTuristico
     {
-        return TravelPackage::create($extra + [
+        return PaqueteTuristico::create($extra + [
             'empresa_id' => $empresa->id,
             'nombre' => 'Tour de Prueba 1 Dia',
             'slug' => 'tour-de-prueba-' . uniqid(),
@@ -55,7 +55,7 @@ class TravelPackageEmpresaTest extends TestCase
         // La columna es NOT NULL y quien la defiende es la base de datos.
         $this->expectException(QueryException::class);
 
-        TravelPackage::create([
+        PaqueteTuristico::create([
             'nombre' => 'Tour Sin Empresa',
             'slug' => 'tour-sin-empresa-' . uniqid(),
             'precio_desde' => 100,
